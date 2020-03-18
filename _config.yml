@@ -1,11 +1,11 @@
 # Basic
-title: Renly
+title: 肥猫
 subtitle: 个人博客
-description: 技术无他唯手熟尔
+description: iOS肥猫成长记（点头像有惊喜）
 # 头像里面的标题
-avatarTitle: 周磊
+avatarTitle: 位立志
 # 头像里面的描述
-avatarDesc: Android / Hybird开发
+avatarDesc: iOS / Hybird开发
 
 repository: VIZ323/viz323.github.io
 github_url: https://github.com/VIZ323
@@ -20,10 +20,10 @@ comment:
 # Social
 social:
 #    weibo: 2008215695
-    github: WithLei
-    jianshu: 3fd46bbcbaa4
-    csdn: qq_42895379
-    mail: heyrenly@163.com
+#    github: WithLei
+#    jianshu: 3fd46bbcbaa4
+#    csdn: qq_42895379
+    mail: 18515164792@163.com
 
 
 # 百度统计
@@ -42,7 +42,7 @@ social:
 #
 #
 #  _post/ 下的文章更换成你自己的文章
-#  帮忙star一下，感谢~😆 地址： https://github.com/leopardpan/leopardpan.github.io
+#  帮忙star一下，感谢~😆 地址： https://github.com/VIZ323/viz323.github.io
 #
 #
 # 《--------------- 下面的信息可以自行选择是否修改 ------------------------》
