@@ -6,7 +6,10 @@ description: 技术无他唯手熟尔
 avatarTitle: 周磊
 # 头像里面的描述
 avatarDesc: Android / Hybird开发
-url: "https://www.heyrenly.com"
+
+repository: mystudytime/studytime-blog
+github_url: https://github.com/mystudytime
+url: https://www.studytime.xin
 
 # Comment
 comment:
