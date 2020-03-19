@@ -1,3 +1,10 @@
+---
+layout: post  
+title:  "SwiftLint + Xcode 简单配置"  
+date: 2020-03-18  
+description: "SwiftLint"
+tag: SwiftLint
+---
 # SwiftLint + Xcode 简单配置
 团队中，规范很重要。最近公司项目在向Swift转型，入门Swift，如何才能保证大家的代码质量。SwiftLint为我们提供了各种语言规范的检验。
 SwiftLint 是一个用于强制检查 Swift 代码风格和规定的一个工具，基本上以 GitHub's Swift 代码风格指南为基础。
