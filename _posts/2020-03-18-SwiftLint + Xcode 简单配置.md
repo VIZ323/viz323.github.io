@@ -25,7 +25,7 @@ pod 'SwiftLint'
 ```
 "${PODS_ROOT}/SwiftLint/swiftlint"
 ```
-![](http://github.com/viz323/VIZImages/raw/master/SwfitLintXcode/15845256406042.jpg
+![](http://github.com/viz323/VIZImages/raw/master/SwfitLintXcode/15845255549345.jpg
 )
 
 ![](media/15845238106270/15845256406042.jpg)
