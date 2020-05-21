@@ -1,10 +1,3 @@
----
-layout: post  
-title:  "SwiftLint + Xcode 简单配置"  
-date: 2020-03-18  
-description: "SwiftLint"
-tag: SwiftLint
----
 # SwiftLint + Xcode 简单配置
 团队中，规范很重要。最近公司项目在向Swift转型，入门Swift，如何才能保证大家的代码质量。SwiftLint为我们提供了各种语言规范的检验。
 SwiftLint 是一个用于强制检查 Swift 代码风格和规定的一个工具，基本上以 GitHub's Swift 代码风格指南为基础。
@@ -19,7 +12,12 @@ pod 'SwiftLint'
 ```
 打开终端执行pod update。把 SwiftLint 的二进制文件和依赖下载到 Pods/ 目录下。
 ## 配置Xcode执行脚本
+
+![](http://github.com/viz323/VIZImages/raw/master/SwfitLintXcode/15845255240323.jpg
+)
 ![](media/15845238106270/15845255240323.jpg)
+![](http://github.com/viz323/VIZImages/raw/master/SwfitLintXcode/15845255240323.jpg
+)
 ![](media/15845238106270/15845255549345.jpg)
 
 添加如下脚本
@@ -27,6 +25,9 @@ pod 'SwiftLint'
 ```
 "${PODS_ROOT}/SwiftLint/swiftlint"
 ```
+![](http://github.com/viz323/VIZImages/raw/master/SwfitLintXcode/15845256406042.jpg
+)
+
 ![](media/15845238106270/15845256406042.jpg)
 
 添加完脚本之后，重新编译即可（Cmd + B），默认的空项目其实已经暗含了很多与 Swift Style 不符合的风格，如果你也受不了这么多警告和错误，那就去一个个修复它吧。
