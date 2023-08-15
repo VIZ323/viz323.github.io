@@ -1,19 +1,19 @@
 # Basic
-title: 肥猫
-subtitle: 个人博客
-description: iOS肥猫成长记（点头像有惊喜）
+#title: 肥猫
+#subtitle: 个人博客
+#description: iOS肥猫成长记（点头像有惊喜）
 # 头像里面的标题
-avatarTitle: VIZ
+#avatarTitle: VIZ
 # 头像里面的描述
-avatarDesc: iOS / Hybird开发
+#avatarDesc: iOS / Hybird开发
 
 repository: VIZ323/viz323.github.io
 github_url: https://github.com/VIZ323
 url: https://www.studytime.xin
 
 # Comment
-comment:
-    disqus: WithLei
+#comment:
+#    disqus: WithLei
     # gitment: xxx // 需要修改 comments.html中的client_id和client_secret
     # uyan: 2143225  # 有言id,登录有言官网申请
 
@@ -58,14 +58,14 @@ textColor: #FF0000
 cover_color: slate
 
 # The blog button should not be removed.
-blog_button:
-    title: 博客主页
+#blog_button:
+#    title: 博客主页
 
 # Navigation buttons in the front page.s
-nav:
-    - {title: 所有文章, description: archive, url: '/archive'}
-    - {title: 标签, description: tags, url: '/tags'}
-    - {title: 关于我, description: about, url: '/about'}
+#nav:
+#    - {title: 所有文章, description: archive, url: '/archive'}
+#    - {title: 标签, description: tags, url: '/tags'}
+#    - {title: 关于我, description: about, url: '/about'}
 
 
 # Pagination
