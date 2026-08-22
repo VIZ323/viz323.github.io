@@ -22,6 +22,22 @@ export function jumpDistanceFromCharge(charge) {
     + (PHYSICS.maxJumpDistance - PHYSICS.minJumpDistance) * responsiveCurve;
 }
 
+export function chargeFromJumpDistance(distance) {
+  const normalizedDistance = clamp(
+    (distance - PHYSICS.minJumpDistance)
+      / (PHYSICS.maxJumpDistance - PHYSICS.minJumpDistance),
+  );
+  return Math.pow(normalizedDistance, 1 / 0.84);
+}
+
+export function chargeWindowForLanding(distance, tolerance) {
+  const safeTolerance = Number.isFinite(tolerance) ? Math.max(0, tolerance) : 0;
+  return {
+    min: chargeFromJumpDistance(distance - safeTolerance),
+    max: chargeFromJumpDistance(distance + safeTolerance),
+  };
+}
+
 export function jumpDurationFromDistance(distance) {
   const normalized = clamp(
     (distance - PHYSICS.minJumpDistance)

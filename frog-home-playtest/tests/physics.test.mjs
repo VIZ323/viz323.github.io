@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   PHYSICS,
+  chargeFromJumpDistance,
   chargeFromDuration,
+  chargeWindowForLanding,
   didLand,
   directionBetween,
   jumpDistanceFromCharge,
@@ -22,6 +24,23 @@ test("蓄力越久，跳跃距离越远", () => {
   const long = jumpDistanceFromCharge(0.9);
   assert.ok(short < medium);
   assert.ok(medium < long);
+});
+
+test("距离可以换算回对应的蓄力比例", () => {
+  for (const charge of [0, 0.15, 0.42, 0.76, 1]) {
+    const distance = jumpDistanceFromCharge(charge);
+    assert.ok(Math.abs(chargeFromJumpDistance(distance) - charge) < 0.000001);
+  }
+});
+
+test("落点蓄力提示区间会覆盖目标中心", () => {
+  const targetDistance = 280;
+  const window = chargeWindowForLanding(targetDistance, 60);
+  const center = chargeFromJumpDistance(targetDistance);
+  assert.ok(window.min < center);
+  assert.ok(window.max > center);
+  assert.ok(window.min >= 0);
+  assert.ok(window.max <= 1);
 });
 
 test("跳跃方向自动指向下一片荷叶", () => {
