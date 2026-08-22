@@ -29,6 +29,10 @@ button {
   font: inherit;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .page {
   min-height: 100dvh;
   display: grid;
@@ -87,6 +91,32 @@ button {
 
 .chapter strong {
   font-size: 17px;
+}
+
+.hud-pills {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.combo-pill {
+  min-width: 59px;
+  padding: 8px 11px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  color: #a45c2b;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 99px;
+  background: rgba(255, 239, 185, 0.88);
+  box-shadow: 0 8px 18px rgba(35, 100, 77, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.combo-pill span {
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .firefly-pill {
@@ -451,6 +481,16 @@ button {
   background: #f0f4de;
   color: #597364;
   font-size: 12px;
+}
+
+.result-stats {
+  margin: -2px 0 18px;
+  display: grid;
+  gap: 7px;
+}
+
+.result-stats .score-line {
+  margin: 0;
 }
 
 .score-line strong {

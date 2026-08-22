@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#dff3d6" />
-    <title>小蛙回家路 · 原型</title>
+    <title>小蛙回家路 · 无尽荷塘</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -14,12 +14,17 @@
 
         <header class="hud" aria-live="polite">
           <div class="chapter">
-            <span class="eyebrow">第一章 · 荷花池</span>
-            <strong id="stageText">回家的第 1 步</strong>
+            <span class="eyebrow">无尽荷塘 · 最佳 <span id="bestText">0</span> 步</span>
+            <strong id="stageText">准备出发</strong>
           </div>
-          <div class="firefly-pill" aria-label="萤火虫数量">
-            <span class="firefly-icon">✦</span>
-            <strong id="fireflyText">0</strong>
+          <div class="hud-pills">
+            <div id="comboPill" class="combo-pill" aria-label="精准落地连击" hidden>
+              <span>稳</span><strong id="comboText">×2</strong>
+            </div>
+            <div class="firefly-pill" aria-label="萤火虫数量">
+              <span class="firefly-icon">✦</span>
+              <strong id="fireflyText">0</strong>
+            </div>
           </div>
         </header>
 
@@ -48,10 +53,10 @@
               <span class="mini-lily"></span>
               <span class="mini-frog">●</span>
             </div>
-            <span class="story-kicker">一个手指就能玩</span>
+            <span class="story-kicker">无限模式 · 一个手指就能玩</span>
             <h1>小蛙回家路</h1>
-            <p>池塘那头传来了妈妈的声音。<br />踩着荷叶，一步一步跳回家吧。</p>
-            <button id="startButton" class="primary-button" type="button">开始回家</button>
+            <p>荷塘的路还在向前延伸。<br />踩着荷叶，看看小蛙今天能走多远吧。</p>
+            <button id="startButton" class="primary-button" type="button">开始挑战</button>
             <small>操作：按住蓄力，松开跳跃</small>
           </div>
         </div>
@@ -59,30 +64,24 @@
         <div id="failOverlay" class="overlay">
           <div class="result-card fail-card">
             <span class="result-emoji">💦</span>
-            <h2>哎呀，掉进水里了</h2>
-            <p>蜻蜓可以把小蛙送回上一片荷叶。</p>
+            <h2 id="failTitle">哎呀，掉进水里了</h2>
+            <p id="failText">蜻蜓可以把小蛙送回上一片荷叶。</p>
+            <div class="result-stats">
+              <div class="score-line"><span>本次前进</span><strong id="failSteps">0 步</strong></div>
+              <div class="score-line"><span>历史最佳</span><strong id="failBest">0 步</strong></div>
+              <div class="score-line"><span>精准落地</span><strong id="failPerfect">0 次</strong></div>
+            </div>
             <button id="reviveButton" class="primary-button ad-button" type="button">
               <span>▶</span> 蜻蜓救援
             </button>
-            <button id="restartButton" class="text-button" type="button">从第一片荷叶重来</button>
-            <small>“蜻蜓救援”用于模拟激励广告复活</small>
-          </div>
-        </div>
-
-        <div id="winOverlay" class="overlay">
-          <div class="result-card win-card">
-            <span class="result-emoji">🌙</span>
-            <span class="story-kicker">第一章完成</span>
-            <h2>听见妈妈的声音啦</h2>
-            <p>“别怕，妈妈就在月光湖的另一边。”</p>
-            <div class="score-line"><span>收集萤火虫</span><strong id="finalScore">0 / 12</strong></div>
-            <button id="againButton" class="primary-button" type="button">再跳一次</button>
+            <button id="restartButton" class="text-button" type="button">重新挑战</button>
+            <small id="rescueNote">每局可以使用一次蜻蜓救援</small>
           </div>
         </div>
       </section>
 
       <aside class="prototype-note">
-        <span>可试玩原型</span>
+        <span>无尽模式原型</span>
         <p>手机上按住画面蓄力，松开跳跃；电脑上使用鼠标。</p>
       </aside>
     </main>
