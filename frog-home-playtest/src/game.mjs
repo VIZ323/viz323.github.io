@@ -9,24 +9,13 @@ import {
   pointOnJump,
 } from "./physics.mjs";
 import { TinyAudio } from "./audio.mjs";
+import {
+  ENDLESS,
+  EndlessGenerator,
+  createStartPlatform,
+} from "./endless.mjs";
 
 const VIEW = { width: 750, height: 1334, baselineY: 1015 };
-
-const LEVEL = [
-  { x: 150, y: 170, radius: 87, kind: "start" },
-  { x: 392, y: 300, radius: 82, kind: "plain" },
-  { x: 228, y: 474, radius: 76, kind: "flower" },
-  { x: 517, y: 612, radius: 84, kind: "plain" },
-  { x: 326, y: 804, radius: 72, kind: "small" },
-  { x: 118, y: 952, radius: 82, kind: "plain" },
-  { x: 366, y: 1118, radius: 78, kind: "flower" },
-  { x: 610, y: 1265, radius: 72, kind: "small" },
-  { x: 390, y: 1443, radius: 84, kind: "plain" },
-  { x: 154, y: 1606, radius: 76, kind: "flower" },
-  { x: 422, y: 1772, radius: 72, kind: "small" },
-  { x: 600, y: 1961, radius: 84, kind: "plain" },
-  { x: 340, y: 2112, radius: 96, kind: "home" },
-];
 
 export class FrogGame {
   constructor(canvas, ui) {
@@ -35,20 +24,30 @@ export class FrogGame {
     this.ui = ui;
     this.audio = new TinyAudio();
     this.state = "ready";
+    this.bestScore = this.loadBestScore();
+    this.recordToBeat = this.bestScore;
+    this.platforms = [];
+    this.generator = null;
     this.currentIndex = 0;
+    this.steps = 0;
     this.fireflies = 0;
+    this.combo = 0;
+    this.bestCombo = 0;
+    this.perfectCount = 0;
+    this.reviveUsed = false;
     this.chargeStartedAt = 0;
     this.charge = 0;
     this.cameraY = 0;
     this.cameraTargetY = 0;
     this.jump = null;
-    this.frog = { x: LEVEL[0].x, y: LEVEL[0].y + 26 };
+    this.resetPlatforms();
+    const start = this.platforms[0];
+    this.frog = { x: start.x, y: start.y + 26 };
     this.particles = [];
     this.ripples = [];
     this.lastTime = performance.now();
     this.toastTimer = 0;
     this.hasJumped = false;
-    this.reviveIndex = 0;
     this.resizeCanvas();
     this.bindInput();
     window.addEventListener("resize", () => this.resizeCanvas());
@@ -91,26 +90,80 @@ export class FrogGame {
     this.state = "idle";
     this.ui.startOverlay.classList.remove("visible");
     this.ui.failOverlay.classList.remove("visible");
-    this.ui.winOverlay.classList.remove("visible");
     this.audio.ensureContext();
     this.updateUi();
   }
 
-  reset() {
+  loadBestScore() {
+    try {
+      const stored = Number(window.localStorage.getItem("frog-home-endless-best"));
+      return Number.isFinite(stored) && stored > 0 ? Math.floor(stored) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  saveBestScore() {
+    try {
+      window.localStorage.setItem("frog-home-endless-best", String(this.bestScore));
+    } catch {
+      // 隐私模式或小游戏适配环境可能不提供 localStorage，忽略即可继续游戏。
+    }
+  }
+
+  resetPlatforms() {
+    const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+    this.generator = new EndlessGenerator(seed);
+    this.platforms = [createStartPlatform()];
     this.currentIndex = 0;
-    this.reviveIndex = 0;
+    this.ensurePlatforms();
+  }
+
+  ensurePlatforms() {
+    while (this.platforms.length - this.currentIndex <= ENDLESS.previewCount) {
+      const previous = this.platforms[this.platforms.length - 1];
+      this.platforms.push(this.generator.next(previous, previous.step + 1));
+    }
+  }
+
+  prunePlatforms() {
+    const removeCount = Math.max(0, this.currentIndex - 3);
+    if (removeCount === 0) return;
+    this.platforms.splice(0, removeCount);
+    this.currentIndex -= removeCount;
+  }
+
+  currentPlatform() {
+    return this.platforms[this.currentIndex];
+  }
+
+  targetPlatform() {
+    return this.platforms[this.currentIndex + 1];
+  }
+
+  reset() {
+    this.resetPlatforms();
+    this.steps = 0;
+    this.recordToBeat = this.bestScore;
     this.fireflies = 0;
+    this.combo = 0;
+    this.bestCombo = 0;
+    this.perfectCount = 0;
+    this.reviveUsed = false;
     this.charge = 0;
     this.jump = null;
     this.cameraY = 0;
     this.cameraTargetY = 0;
     this.hasJumped = false;
-    this.frog.x = LEVEL[0].x;
-    this.frog.y = LEVEL[0].y + 26;
+    const start = this.currentPlatform();
+    this.frog.x = start.x;
+    this.frog.y = start.y + 26;
     this.particles.length = 0;
     this.ripples.length = 0;
     this.ui.hint.classList.remove("hidden");
     this.ui.powerWrap.classList.remove("visible");
+    this.ui.reviveButton.hidden = false;
+    this.ui.reviveButton.disabled = false;
     this.updateUi();
   }
 
@@ -121,13 +174,18 @@ export class FrogGame {
   }
 
   revive() {
-    this.currentIndex = this.reviveIndex;
-    const platform = LEVEL[this.currentIndex];
+    if (this.reviveUsed) return;
+    this.reviveUsed = true;
+    const platform = this.currentPlatform();
     this.frog.x = platform.x;
     this.frog.y = platform.y + 26;
     this.cameraTargetY = Math.max(0, platform.y - 500);
     this.jump = null;
     this.state = "idle";
+    for (let offset = 1; offset <= 2; offset += 1) {
+      const rescuePlatform = this.platforms[this.currentIndex + offset];
+      if (rescuePlatform) rescuePlatform.radius = Math.max(rescuePlatform.radius, 84 - offset * 3);
+    }
     this.ui.failOverlay.classList.remove("visible");
     this.showToast("蜻蜓把你送回来了");
     this.spawnSparkles(platform.x, platform.y + 48, "#f7cc4d", 12);
@@ -153,8 +211,8 @@ export class FrogGame {
     const heldFor = performance.now() - this.chargeStartedAt;
     this.charge = chargeFromDuration(heldFor);
     const distance = jumpDistanceFromCharge(this.charge);
-    const current = LEVEL[this.currentIndex];
-    const target = LEVEL[this.currentIndex + 1];
+    const current = this.currentPlatform();
+    const target = this.targetPlatform();
     if (!target) return;
     const start = { x: current.x, y: current.y + 26 };
     const targetPoint = { x: target.x, y: target.y + 26 };
@@ -184,32 +242,39 @@ export class FrogGame {
     const error = landingError(endpoint, target);
     if (hit) {
       this.currentIndex += 1;
-      this.reviveIndex = this.currentIndex;
+      this.steps += 1;
       this.frog.x = target.x;
       this.frog.y = target.y + 26;
       const perfect = error <= Math.max(18, target.radius * 0.24);
       if (perfect) {
+        this.combo += 1;
+        this.bestCombo = Math.max(this.bestCombo, this.combo);
+        this.perfectCount += 1;
         this.fireflies += 1;
-        this.showToast("稳稳落下 · 萤火虫 +1");
+        this.showToast(this.combo >= 3
+          ? `稳稳连击 ×${this.combo} · 萤火虫 +1`
+          : "稳稳落下 · 萤火虫 +1");
         this.spawnSparkles(target.x, target.y + 58, "#ffd45c", 10);
       } else {
+        this.combo = 0;
         this.showToast(error > target.radius * 0.62 ? "好险，踩到边边啦" : "落稳了");
+      }
+      if (this.steps > this.bestScore) {
+        this.bestScore = this.steps;
+        this.saveBestScore();
+        if (this.recordToBeat >= 5 && this.steps === this.recordToBeat + 1) {
+          this.showToast(`新纪录 · ${this.steps} 步！`);
+          this.spawnSparkles(target.x, target.y + 64, "#fff09a", 16);
+        }
       }
       this.spawnRipple(target.x, target.y);
       this.audio.land(perfect);
       this.jump = null;
       this.cameraTargetY = Math.max(0, target.y - 500);
+      this.prunePlatforms();
+      this.ensurePlatforms();
       this.updateUi();
-      if (this.currentIndex === LEVEL.length - 1) {
-        this.state = "complete";
-        window.setTimeout(() => {
-          this.audio.win();
-          this.ui.finalScore.textContent = `${this.fireflies} / ${LEVEL.length - 1}`;
-          this.ui.winOverlay.classList.add("visible");
-        }, 600);
-      } else {
-        this.state = "idle";
-      }
+      this.state = "idle";
       return;
     }
 
@@ -217,7 +282,23 @@ export class FrogGame {
     this.audio.splash();
     this.spawnSplash(this.frog.x, this.frog.y - 20);
     this.jump = null;
+    this.updateFailUi();
     window.setTimeout(() => this.ui.failOverlay.classList.add("visible"), 480);
+  }
+
+  updateFailUi() {
+    this.ui.failSteps.textContent = `${this.steps} 步`;
+    this.ui.failBest.textContent = `${this.bestScore} 步`;
+    this.ui.failPerfect.textContent = `${this.perfectCount} 次`;
+    this.ui.reviveButton.hidden = this.reviveUsed;
+    this.ui.reviveButton.disabled = this.reviveUsed;
+    this.ui.failTitle.textContent = this.reviveUsed ? "这次走到了这里" : "哎呀，掉进水里了";
+    this.ui.failText.textContent = this.reviveUsed
+      ? "休息一下，再向更远的荷塘出发吧。"
+      : "蜻蜓可以把小蛙送回上一片荷叶。";
+    this.ui.rescueNote.textContent = this.reviveUsed
+      ? "本局的蜻蜓救援已经使用过啦"
+      : "每局可以使用一次蜻蜓救援";
   }
 
   update(time, delta) {
@@ -277,7 +358,9 @@ export class FrogGame {
     this.drawBackground(time);
     this.drawDistantPlants();
     this.drawPathGuide();
-    for (let index = 0; index < LEVEL.length; index += 1) this.drawPlatform(LEVEL[index], index, time);
+    for (let index = 0; index < this.platforms.length; index += 1) {
+      this.drawPlatform(this.platforms[index], index, time);
+    }
     this.drawRipples();
     this.drawParticles();
     if (this.state !== "failed" || this.particles.length === 0) this.drawFrog(time);
@@ -347,9 +430,11 @@ export class FrogGame {
   }
 
   drawPathGuide() {
-    if (this.currentIndex >= LEVEL.length - 1) return;
-    const from = this.worldToScreen(LEVEL[this.currentIndex].x, LEVEL[this.currentIndex].y + 15);
-    const to = this.worldToScreen(LEVEL[this.currentIndex + 1].x, LEVEL[this.currentIndex + 1].y + 15);
+    const current = this.currentPlatform();
+    const target = this.targetPlatform();
+    if (!current || !target) return;
+    const from = this.worldToScreen(current.x, current.y + 15);
+    const to = this.worldToScreen(target.x, target.y + 15);
     const ctx = this.ctx;
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,226,0.54)";
@@ -367,7 +452,7 @@ export class FrogGame {
     if (screen.y < -130 || screen.y > VIEW.height + 130) return;
     const ctx = this.ctx;
     const isTarget = index === this.currentIndex + 1 && ["idle", "charging", "jumping"].includes(this.state);
-    const isHome = platform.kind === "home";
+    const isRest = platform.kind === "rest";
     const radius = platform.radius;
 
     if (isTarget) {
@@ -393,8 +478,8 @@ export class FrogGame {
     ctx.restore();
 
     const leafGradient = ctx.createLinearGradient(screen.x, screen.y - 22, screen.x, screen.y + 30);
-    leafGradient.addColorStop(0, isHome ? "#77b64c" : "#63b44e");
-    leafGradient.addColorStop(1, isHome ? "#397f3d" : "#378841");
+    leafGradient.addColorStop(0, isRest ? "#77b64c" : "#63b44e");
+    leafGradient.addColorStop(1, isRest ? "#397f3d" : "#378841");
     ctx.save();
     ctx.translate(screen.x, screen.y);
     ctx.scale(1, 0.36);
@@ -412,8 +497,9 @@ export class FrogGame {
     ctx.stroke();
     ctx.restore();
 
-    if (platform.kind === "flower" || isHome) this.drawLotus(screen.x - radius * 0.5, screen.y - 21, isHome ? 1.2 : 0.82);
-    if (isHome) this.drawMother(screen.x + 18, screen.y - 69, time);
+    if (platform.kind === "flower" || isRest) {
+      this.drawLotus(screen.x - radius * 0.5, screen.y - 21, isRest ? 1.05 : 0.82);
+    }
   }
 
   drawLotus(x, y, scale) {
@@ -625,11 +711,12 @@ export class FrogGame {
   }
 
   updateUi() {
-    const totalJumps = LEVEL.length - 1;
-    this.ui.stageText.textContent = this.currentIndex === totalJumps
-      ? "到家啦"
-      : `回家的第 ${this.currentIndex + 1} 步`;
+    this.ui.stageText.textContent = this.steps === 0 ? "准备出发" : `已经前进 ${this.steps} 步`;
+    this.ui.bestText.textContent = String(this.bestScore);
     this.ui.fireflyText.textContent = String(this.fireflies);
-    this.ui.progressFill.style.width = `${Math.round((this.currentIndex / totalJumps) * 100)}%`;
+    const milestoneProgress = this.steps === 0 ? 0 : (((this.steps - 1) % 10) + 1) * 10;
+    this.ui.progressFill.style.width = `${milestoneProgress}%`;
+    this.ui.comboPill.hidden = this.combo < 2;
+    this.ui.comboText.textContent = `×${this.combo}`;
   }
 }
