@@ -34,6 +34,24 @@ export function difficultyForStep(step) {
     : { minDistance: 270, maxDistance: 370, minRadius: 60, maxRadius: 78 };
 }
 
+const RHYTHM = Object.freeze([
+  { name: "起步", minBias: 0.06, maxBias: 0.28, radiusOffset: 5 },
+  { name: "顺跳", minBias: 0.28, maxBias: 0.52, radiusOffset: 2 },
+  { name: "伸展", minBias: 0.68, maxBias: 0.9, radiusOffset: 0 },
+  { name: "缓一缓", minBias: 0.08, maxBias: 0.3, radiusOffset: 6 },
+  { name: "踩稳", minBias: 0.42, maxBias: 0.64, radiusOffset: -4 },
+  { name: "轻点", minBias: 0.02, maxBias: 0.22, radiusOffset: 4 },
+  { name: "远跳", minBias: 0.75, maxBias: 0.96, radiusOffset: -1 },
+  { name: "顺跳", minBias: 0.3, maxBias: 0.58, radiusOffset: 1 },
+  { name: "压轴", minBias: 0.82, maxBias: 1, radiusOffset: -5 },
+  { name: "歇脚", minBias: 0.12, maxBias: 0.42, radiusOffset: 8 },
+]);
+
+export function rhythmForStep(step) {
+  const normalizedStep = Math.max(1, Math.floor(step));
+  return RHYTHM[(normalizedStep - 1) % RHYTHM.length];
+}
+
 export function createStartPlatform() {
   return { x: 150, y: 170, radius: 87, kind: "start", step: 0 };
 }
@@ -50,12 +68,18 @@ export class EndlessGenerator {
   next(previous, step) {
     const difficulty = difficultyForStep(step);
     const isRest = step % ENDLESS.restInterval === 0;
+    const rhythm = rhythmForStep(step);
     const radius = isRest
       ? between(this.random, 90, 96)
-      : between(this.random, difficulty.minRadius, difficulty.maxRadius);
+      : between(this.random, difficulty.minRadius, difficulty.maxRadius) + rhythm.radiusOffset;
+    const distanceRange = difficulty.maxDistance - difficulty.minDistance;
     const distance = isRest
       ? between(this.random, Math.max(195, difficulty.minDistance - 35), Math.min(295, difficulty.maxDistance))
-      : between(this.random, difficulty.minDistance, difficulty.maxDistance);
+      : between(
+        this.random,
+        difficulty.minDistance + distanceRange * rhythm.minBias,
+        difficulty.minDistance + distanceRange * rhythm.maxBias,
+      );
     const minX = radius + ENDLESS.edgePadding;
     const maxX = ENDLESS.width - radius - ENDLESS.edgePadding;
     const horizontal = between(this.random, distance * 0.34, distance * 0.72);
@@ -84,6 +108,7 @@ export class EndlessGenerator {
       radius: Math.round(radius),
       kind,
       step,
+      rhythm: rhythm.name,
     };
   }
 }

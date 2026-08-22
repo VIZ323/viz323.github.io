@@ -10,6 +10,7 @@ const ui = {
   hint: document.querySelector("#hint"),
   powerWrap: document.querySelector("#powerWrap"),
   powerFill: document.querySelector("#powerFill"),
+  powerTarget: document.querySelector("#powerTarget"),
   toast: document.querySelector("#toast"),
   startOverlay: document.querySelector("#startOverlay"),
   failOverlay: document.querySelector("#failOverlay"),

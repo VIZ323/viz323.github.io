@@ -1,5 +1,6 @@
 import {
   PHYSICS,
+  chargeWindowForLanding,
   chargeFromDuration,
   didLand,
   directionBetween,
@@ -16,6 +17,45 @@ import {
 } from "./endless.mjs";
 
 const VIEW = { width: 750, height: 1334, baselineY: 1015 };
+
+const SCENES = Object.freeze([
+  {
+    name: "晨雾荷塘",
+    top: "#dff4da",
+    middle: "#c4e9d9",
+    bottom: "#80c9bd",
+    glow: "rgba(255, 250, 204, 0.7)",
+    plant: "#5c9870",
+  },
+  {
+    name: "晴光水湾",
+    top: "#d8f1dd",
+    middle: "#aee0d2",
+    bottom: "#65bcb5",
+    glow: "rgba(255, 239, 167, 0.78)",
+    plant: "#4c916c",
+  },
+  {
+    name: "晚霞芦荡",
+    top: "#fae3bd",
+    middle: "#d6dcb9",
+    bottom: "#79b8ad",
+    glow: "rgba(255, 209, 132, 0.7)",
+    plant: "#638f67",
+  },
+  {
+    name: "月光荷塘",
+    top: "#a9c8c7",
+    middle: "#82b6b3",
+    bottom: "#4f9694",
+    glow: "rgba(255, 249, 211, 0.72)",
+    plant: "#477b68",
+  },
+]);
+
+function sceneForSteps(steps) {
+  return SCENES[Math.floor(Math.max(0, steps) / 15) % SCENES.length];
+}
 
 export class FrogGame {
   constructor(canvas, ui) {
@@ -40,6 +80,8 @@ export class FrogGame {
     this.cameraY = 0;
     this.cameraTargetY = 0;
     this.jump = null;
+    this.landing = null;
+    this.cameraKick = 0;
     this.resetPlatforms();
     const start = this.platforms[0];
     this.frog = { x: start.x, y: start.y + 26 };
@@ -152,6 +194,8 @@ export class FrogGame {
     this.reviveUsed = false;
     this.charge = 0;
     this.jump = null;
+    this.landing = null;
+    this.cameraKick = 0;
     this.cameraY = 0;
     this.cameraTargetY = 0;
     this.hasJumped = false;
@@ -198,6 +242,19 @@ export class FrogGame {
     this.charge = 0;
     this.ui.powerWrap.classList.add("visible");
     this.ui.hint.classList.add("hidden");
+    this.updatePowerTarget();
+  }
+
+  updatePowerTarget() {
+    const current = this.currentPlatform();
+    const target = this.targetPlatform();
+    if (!current || !target || !this.ui.powerTarget) return;
+    const distance = Math.hypot(target.x - current.x, target.y - current.y);
+    const window = chargeWindowForLanding(distance, target.radius * 0.72);
+    const left = Math.round(window.min * 1000) / 10;
+    const width = Math.max(2.5, Math.round((window.max - window.min) * 1000) / 10);
+    this.ui.powerTarget.style.left = `${left}%`;
+    this.ui.powerTarget.style.width = `${width}%`;
   }
 
   cancelCharge() {
@@ -226,7 +283,9 @@ export class FrogGame {
       target,
       arcHeight: 116 + distance * 0.25,
       angle: Math.atan2(direction.y, direction.x),
+      progress: 0,
     };
+    this.landing = null;
     this.state = "jumping";
     this.hasJumped = true;
     this.ui.powerWrap.classList.remove("visible");
@@ -241,11 +300,21 @@ export class FrogGame {
     const hit = didLand(endpoint, target);
     const error = landingError(endpoint, target);
     if (hit) {
+      const landingSide = Math.sign(endpoint.x - target.x) || 1;
       this.currentIndex += 1;
       this.steps += 1;
       this.frog.x = target.x;
       this.frog.y = target.y + 26;
       const perfect = error <= Math.max(18, target.radius * 0.24);
+      const edgeLanding = !perfect && error > target.radius * 0.62;
+      this.landing = {
+        startedAt: performance.now(),
+        duration: edgeLanding ? 460 : 300,
+        kind: perfect ? "perfect" : edgeLanding ? "edge" : "safe",
+        side: landingSide,
+        platformStep: target.step,
+      };
+      this.cameraKick = perfect ? 4 : edgeLanding ? 7 : 2.5;
       if (perfect) {
         this.combo += 1;
         this.bestCombo = Math.max(this.bestCombo, this.combo);
@@ -257,7 +326,8 @@ export class FrogGame {
         this.spawnSparkles(target.x, target.y + 58, "#ffd45c", 10);
       } else {
         this.combo = 0;
-        this.showToast(error > target.radius * 0.62 ? "好险，踩到边边啦" : "落稳了");
+        this.showToast(edgeLanding ? "好险！踩住边边啦" : "落稳了");
+        if (edgeLanding) this.spawnEdgeDrops(target.x, target.y, landingSide);
       }
       if (this.steps > this.bestScore) {
         this.bestScore = this.steps;
@@ -269,21 +339,37 @@ export class FrogGame {
       }
       this.spawnRipple(target.x, target.y);
       this.audio.land(perfect);
+      this.haptic(perfect ? 18 : edgeLanding ? [12, 22, 14] : 9);
       this.jump = null;
       this.cameraTargetY = Math.max(0, target.y - 500);
       this.prunePlatforms();
       this.ensurePlatforms();
       this.updateUi();
+      if (this.steps > 0 && this.steps % 15 === 0) {
+        this.showToast(`前方 · ${sceneForSteps(this.steps).name}`);
+      } else if (this.steps > 0 && this.steps % 10 === 0) {
+        this.showToast(`${this.steps} 步 · 在大荷叶上歇一歇`);
+      }
       this.state = "idle";
       return;
     }
 
     this.state = "failed";
     this.audio.splash();
+    this.haptic([18, 35, 24]);
+    this.cameraKick = 10;
     this.spawnSplash(this.frog.x, this.frog.y - 20);
     this.jump = null;
     this.updateFailUi();
     window.setTimeout(() => this.ui.failOverlay.classList.add("visible"), 480);
+  }
+
+  haptic(pattern) {
+    try {
+      window.navigator?.vibrate?.(pattern);
+    } catch {
+      // 浏览器或小游戏运行环境不支持震动时直接忽略。
+    }
   }
 
   updateFailUi() {
@@ -309,6 +395,7 @@ export class FrogGame {
 
     if (this.state === "jumping" && this.jump) {
       const progress = (time - this.jump.startedAt) / this.jump.duration;
+      this.jump.progress = Math.min(1, Math.max(0, progress));
       const point = pointOnJump(
         this.jump.start,
         this.jump.direction,
@@ -321,7 +408,12 @@ export class FrogGame {
       if (progress >= 1) this.resolveJump();
     }
 
+    if (this.landing && time - this.landing.startedAt >= this.landing.duration) {
+      this.landing = null;
+    }
+
     this.cameraY += (this.cameraTargetY - this.cameraY) * Math.min(1, delta * 4.2);
+    this.cameraKick *= Math.pow(0.018, delta);
     this.updateParticles(delta);
   }
 
@@ -349,7 +441,8 @@ export class FrogGame {
   }
 
   worldToScreen(x, y) {
-    return { x, y: VIEW.baselineY - (y - this.cameraY) };
+    const kick = this.cameraKick > 0.2 ? Math.sin(performance.now() * 0.07) * this.cameraKick : 0;
+    return { x: x + kick * 0.35, y: VIEW.baselineY - (y - this.cameraY) + kick };
   }
 
   draw(time) {
@@ -357,6 +450,7 @@ export class FrogGame {
     ctx.clearRect(0, 0, VIEW.width, VIEW.height);
     this.drawBackground(time);
     this.drawDistantPlants();
+    this.drawAmbientEvents(time);
     this.drawPathGuide();
     for (let index = 0; index < this.platforms.length; index += 1) {
       this.drawPlatform(this.platforms[index], index, time);
@@ -369,14 +463,15 @@ export class FrogGame {
 
   drawBackground(time) {
     const ctx = this.ctx;
+    const scene = sceneForSteps(this.steps);
     const gradient = ctx.createLinearGradient(0, 0, 0, VIEW.height);
-    gradient.addColorStop(0, "#dff4da");
-    gradient.addColorStop(0.3, "#c4e9d9");
-    gradient.addColorStop(1, "#80c9bd");
+    gradient.addColorStop(0, scene.top);
+    gradient.addColorStop(0.3, scene.middle);
+    gradient.addColorStop(1, scene.bottom);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, VIEW.width, VIEW.height);
 
-    ctx.fillStyle = "rgba(255, 250, 204, 0.7)";
+    ctx.fillStyle = scene.glow;
     ctx.beginPath();
     ctx.arc(625, 185, 72, 0, Math.PI * 2);
     ctx.fill();
@@ -412,9 +507,10 @@ export class FrogGame {
 
   drawDistantPlants() {
     const ctx = this.ctx;
+    const scene = sceneForSteps(this.steps);
     ctx.save();
     ctx.globalAlpha = 0.32;
-    ctx.fillStyle = "#5c9870";
+    ctx.fillStyle = scene.plant;
     for (let x = 18; x < VIEW.width; x += 52) {
       const height = 55 + ((x * 17) % 70);
       ctx.save();
@@ -427,6 +523,49 @@ export class FrogGame {
       ctx.restore();
     }
     ctx.restore();
+  }
+
+  drawAmbientEvents(time) {
+    const ctx = this.ctx;
+    const sceneIndex = Math.floor(this.steps / 15) % SCENES.length;
+    const travel = (time * (0.035 + sceneIndex * 0.004) + this.steps * 91) % 960;
+    const x = -100 + travel;
+    const y = 255 + Math.sin(time * 0.004 + this.steps) * 22;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(time * 0.006) * 0.08);
+    ctx.globalAlpha = 0.48;
+    ctx.strokeStyle = sceneIndex === 3 ? "#f5e990" : "#416f59";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-18, 0);
+    ctx.lineTo(17, 0);
+    ctx.stroke();
+    ctx.fillStyle = sceneIndex === 3 ? "rgba(255,244,151,0.72)" : "rgba(243,255,236,0.62)";
+    ctx.beginPath();
+    ctx.ellipse(-8, -8, 15, 6, -0.38, 0, Math.PI * 2);
+    ctx.ellipse(-8, 8, 15, 6, 0.38, 0, Math.PI * 2);
+    ctx.ellipse(8, -7, 14, 5, 0.35, 0, Math.PI * 2);
+    ctx.ellipse(8, 7, 14, 5, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    if (sceneIndex === 3) {
+      ctx.save();
+      for (let index = 0; index < 9; index += 1) {
+        const fireflyX = (index * 103 + 57) % VIEW.width;
+        const fireflyY = 330 + ((index * 71) % 430) + Math.sin(time * 0.0025 + index) * 18;
+        ctx.globalAlpha = 0.38 + Math.sin(time * 0.006 + index) * 0.18;
+        ctx.fillStyle = "#fff3a0";
+        ctx.shadowColor = "#fff17a";
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(fireflyX, fireflyY, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
   }
 
   drawPathGuide() {
@@ -454,6 +593,15 @@ export class FrogGame {
     const isTarget = index === this.currentIndex + 1 && ["idle", "charging", "jumping"].includes(this.state);
     const isRest = platform.kind === "rest";
     const radius = platform.radius;
+    let impact = 0;
+    let tilt = 0;
+    if (this.landing?.platformStep === platform.step) {
+      const progress = Math.min(1, Math.max(0, (time - this.landing.startedAt) / this.landing.duration));
+      impact = Math.sin(progress * Math.PI) * (this.landing.kind === "edge" ? 1 : 0.72);
+      if (this.landing.kind === "edge") {
+        tilt = this.landing.side * 0.09 * Math.sin(progress * Math.PI) * (1 - progress * 0.45);
+      }
+    }
 
     if (isTarget) {
       const pulse = 1 + Math.sin(time * 0.004) * 0.06;
@@ -469,7 +617,8 @@ export class FrogGame {
     }
 
     ctx.save();
-    ctx.translate(screen.x, screen.y + 8);
+    ctx.translate(screen.x, screen.y + 8 + impact * 7);
+    ctx.rotate(tilt * 0.35);
     ctx.scale(1, 0.34);
     ctx.fillStyle = "rgba(26, 91, 76, 0.15)";
     ctx.beginPath();
@@ -481,8 +630,9 @@ export class FrogGame {
     leafGradient.addColorStop(0, isRest ? "#77b64c" : "#63b44e");
     leafGradient.addColorStop(1, isRest ? "#397f3d" : "#378841");
     ctx.save();
-    ctx.translate(screen.x, screen.y);
-    ctx.scale(1, 0.36);
+    ctx.translate(screen.x, screen.y + impact * 5);
+    ctx.rotate(tilt);
+    ctx.scale(1 + impact * 0.035, 0.36 - impact * 0.045);
     ctx.fillStyle = leafGradient;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0.16, Math.PI * 2 - 0.22);
@@ -498,7 +648,7 @@ export class FrogGame {
     ctx.restore();
 
     if (platform.kind === "flower" || isRest) {
-      this.drawLotus(screen.x - radius * 0.5, screen.y - 21, isRest ? 1.05 : 0.82);
+      this.drawLotus(screen.x - radius * 0.5, screen.y - 21 + impact * 4, isRest ? 1.05 : 0.82);
     }
   }
 
@@ -524,25 +674,62 @@ export class FrogGame {
   drawFrog(time) {
     const screen = this.worldToScreen(this.frog.x, this.frog.y);
     const ctx = this.ctx;
-    let squash = 0;
-    if (this.state === "charging") squash = this.charge * 0.24;
-    const bob = this.state === "idle" ? Math.sin(time * 0.004) * 2.5 : 0;
-    const rotation = this.state === "jumping" && this.jump ? 0.14 * Math.sin(((time - this.jump.startedAt) / this.jump.duration) * Math.PI) : 0;
+    const jumpProgress = this.jump?.progress ?? 0;
+    const flight = this.state === "jumping" ? Math.sin(jumpProgress * Math.PI) : 0;
+    const jumpArc = this.state === "jumping" && this.jump
+      ? 4 * this.jump.arcHeight * jumpProgress * (1 - jumpProgress)
+      : 0;
+    const chargeSquash = this.state === "charging" ? this.charge * 0.26 : 0;
+    let landingSquash = 0;
+    let landingWobble = 0;
+    if (this.landing) {
+      const progress = Math.min(1, Math.max(0, (time - this.landing.startedAt) / this.landing.duration));
+      landingSquash = Math.sin(progress * Math.PI) * (this.landing.kind === "edge" ? 0.18 : 0.13);
+      if (this.landing.kind === "edge") {
+        landingWobble = this.landing.side
+          * Math.sin(progress * Math.PI * 5)
+          * (1 - progress)
+          * 0.12;
+      }
+    }
+    const squash = Math.max(chargeSquash, landingSquash);
+    const bob = this.state === "idle" && !this.landing ? Math.sin(time * 0.004) * 2.5 : 0;
+    const lookDirection = this.jump
+      ? Math.sign(this.jump.direction.x)
+      : Math.sign((this.targetPlatform()?.x ?? this.frog.x) - this.frog.x);
+    const rotation = (this.jump ? this.jump.direction.x * 0.17 * flight : 0) + landingWobble;
+
+    ctx.save();
+    ctx.globalAlpha = 0.15 * (1 - flight * 0.48);
+    ctx.fillStyle = "#1f5239";
+    ctx.beginPath();
+    ctx.ellipse(
+      screen.x,
+      screen.y + 28 + jumpArc,
+      45 - flight * 12,
+      10 - flight * 2,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.restore();
 
     ctx.save();
     ctx.translate(screen.x, screen.y + bob + squash * 35);
     ctx.rotate(rotation);
-    ctx.scale(1 + squash * 0.18, 1 - squash);
-
-    ctx.fillStyle = "rgba(31, 82, 57, 0.15)";
-    ctx.beginPath();
-    ctx.ellipse(0, 28, 45, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.scale(1 + squash * 0.18 - flight * 0.045, 1 - squash + flight * 0.14);
 
     ctx.fillStyle = "#4c953d";
     ctx.beginPath();
-    ctx.ellipse(-29, 20, 26, 14, -0.25, 0, Math.PI * 2);
-    ctx.ellipse(29, 20, 26, 14, 0.25, 0, Math.PI * 2);
+    ctx.ellipse(-29 - flight * 7, 20 + flight * 7, 26, 14 - flight * 2, -0.25 - flight * 0.18, 0, Math.PI * 2);
+    ctx.ellipse(29 + flight * 7, 20 + flight * 7, 26, 14 - flight * 2, 0.25 + flight * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#72b94b";
+    ctx.beginPath();
+    ctx.ellipse(-22 - flight * 5, 25 + flight * 8, 13, 8, -0.14 - flight * 0.2, 0, Math.PI * 2);
+    ctx.ellipse(22 + flight * 5, 25 + flight * 8, 13, 8, 0.14 + flight * 0.2, 0, Math.PI * 2);
     ctx.fill();
 
     const bodyGradient = ctx.createLinearGradient(0, -38, 0, 32);
@@ -565,8 +752,8 @@ export class FrogGame {
     ctx.fill();
     ctx.fillStyle = "#173a31";
     ctx.beginPath();
-    ctx.arc(-23, -31, 5, 0, Math.PI * 2);
-    ctx.arc(23, -31, 5, 0, Math.PI * 2);
+    ctx.arc(-23 + lookDirection * 2.6, -31, 5, 0, Math.PI * 2);
+    ctx.arc(23 + lookDirection * 2.6, -31, 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "rgba(248, 134, 133, 0.62)";
     ctx.beginPath();
@@ -577,7 +764,11 @@ export class FrogGame {
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.arc(0, 3, 10, 0.12, Math.PI - 0.12);
+    if (flight > 0.76) {
+      ctx.arc(0, 8, 5, 0, Math.PI * 2);
+    } else {
+      ctx.arc(0, 3, 10, 0.12, Math.PI - 0.12);
+    }
     ctx.stroke();
     ctx.restore();
   }
@@ -683,6 +874,21 @@ export class FrogGame {
     }
   }
 
+  spawnEdgeDrops(x, y, side) {
+    for (let index = 0; index < 9; index += 1) {
+      this.particles.push({
+        x: x + side * (35 + Math.random() * 28),
+        y: y + 5,
+        vx: side * (45 + Math.random() * 105),
+        vy: 55 + Math.random() * 115,
+        size: 3 + Math.random() * 4,
+        color: "#e8fff8",
+        life: 0.5 + Math.random() * 0.25,
+        maxLife: 0.75,
+      });
+    }
+  }
+
   spawnSplash(x, y) {
     for (let i = 0; i < 16; i += 1) {
       this.particles.push({
@@ -711,7 +917,16 @@ export class FrogGame {
   }
 
   updateUi() {
-    this.ui.stageText.textContent = this.steps === 0 ? "准备出发" : `已经前进 ${this.steps} 步`;
+    const recordGap = this.recordToBeat - this.steps;
+    if (this.steps === 0) {
+      this.ui.stageText.textContent = "准备出发";
+    } else if (this.recordToBeat >= 5 && recordGap > 0 && recordGap <= 3) {
+      this.ui.stageText.textContent = `再跳 ${recordGap} 步追平最佳`;
+    } else if (this.recordToBeat >= 5 && recordGap === 0) {
+      this.ui.stageText.textContent = "下一跳就是新纪录";
+    } else {
+      this.ui.stageText.textContent = `已经前进 ${this.steps} 步`;
+    }
     this.ui.bestText.textContent = String(this.bestScore);
     this.ui.fireflyText.textContent = String(this.fireflies);
     const milestoneProgress = this.steps === 0 ? 0 : (((this.steps - 1) % 10) + 1) * 10;

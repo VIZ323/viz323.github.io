@@ -233,6 +233,7 @@ button {
 }
 
 .power-track {
+  position: relative;
   flex: 1;
   height: 15px;
   padding: 3px;
@@ -244,10 +245,26 @@ button {
 }
 
 .power-fill {
+  position: relative;
+  z-index: 1;
   width: 0;
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #75c64f 0%, #f1c94c 62%, #ef765c 100%);
+}
+
+.power-target {
+  position: absolute;
+  z-index: 2;
+  top: 1px;
+  bottom: 1px;
+  left: 42%;
+  width: 12%;
+  border: 2px solid rgba(255, 255, 255, 0.96);
+  border-radius: 99px;
+  background: rgba(255, 240, 135, 0.3);
+  box-shadow: 0 0 0 1px rgba(54, 109, 66, 0.3), 0 0 9px rgba(255, 230, 105, 0.72);
+  pointer-events: none;
 }
 
 .toast {

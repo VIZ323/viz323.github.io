@@ -4,6 +4,7 @@ import {
   ENDLESS,
   difficultyForStep,
   generatePlatforms,
+  rhythmForStep,
 } from "../src/endless.mjs";
 
 test("相同种子会生成完全相同的无尽荷塘", () => {
@@ -37,4 +38,25 @@ test("前六十步难度逐段提高，之后按波次安排恢复段", () => {
   assert.ok(difficultyForStep(1).minRadius > difficultyForStep(31).minRadius);
   assert.ok(difficultyForStep(61).minRadius < difficultyForStep(76).minRadius);
   assert.ok(difficultyForStep(61).minDistance > difficultyForStep(76).minDistance);
+});
+
+test("每十步形成短跳、长跳、缓冲和压轴的固定节奏", () => {
+  assert.equal(rhythmForStep(1).name, "起步");
+  assert.equal(rhythmForStep(3).name, "伸展");
+  assert.equal(rhythmForStep(4).name, "缓一缓");
+  assert.equal(rhythmForStep(9).name, "压轴");
+  assert.equal(rhythmForStep(10).name, "歇脚");
+  assert.equal(rhythmForStep(11).name, "起步");
+
+  const platforms = generatePlatforms(31, 20260823);
+  for (let block = 0; block < 3; block += 1) {
+    const start = block * 10;
+    const distance = (step) => {
+      const current = platforms[start + step];
+      const previous = platforms[start + step - 1];
+      return Math.hypot(current.x - previous.x, current.y - previous.y);
+    };
+    assert.ok(distance(3) > distance(1));
+    assert.ok(distance(9) > distance(6));
+  }
 });
