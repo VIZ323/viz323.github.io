@@ -320,28 +320,87 @@ button {
   z-index: 3;
   left: 50%;
   bottom: 34px;
-  width: 48px;
-  height: 37px;
+  width: 54px;
+  height: 39px;
   transform: translateX(-50%);
-  color: transparent;
-  border-radius: 45% 45% 42% 42%;
-  background: #74bb48;
-  box-shadow: -13px -11px 0 -7px #74bb48, 13px -11px 0 -7px #74bb48;
+  border-radius: 48% 48% 44% 44%;
+  background: linear-gradient(145deg, #a6dc64, #64ad43);
+  box-shadow:
+    inset 0 -5px 0 rgba(51, 127, 58, 0.16),
+    0 7px 10px rgba(36, 99, 65, 0.2);
+  animation: mini-breathe 2.4s ease-in-out infinite;
 }
 
 .mini-frog::before,
 .mini-frog::after {
   content: "";
   position: absolute;
-  top: 5px;
-  width: 5px;
-  height: 5px;
+  top: -7px;
+  width: 19px;
+  height: 19px;
   border-radius: 50%;
-  background: #163c31;
+  background: #91ce56;
+  box-shadow: inset 0 -2px 0 rgba(58, 130, 59, 0.14);
 }
 
-.mini-frog::before { left: 10px; }
-.mini-frog::after { right: 10px; }
+.mini-frog::before { left: 5px; }
+.mini-frog::after { right: 5px; }
+
+.mini-frog i {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.mini-eye {
+  z-index: 2;
+  top: -1px;
+  width: 7px;
+  height: 8px;
+  border: 2px solid #fffbe8;
+  border-radius: 50%;
+  background: #173a31;
+  box-shadow: 1px -1px 0 #fff;
+}
+
+.mini-eye-a { left: 11px; }
+.mini-eye-b { right: 11px; }
+
+.mini-cheek {
+  z-index: 2;
+  top: 15px;
+  width: 8px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(246, 132, 132, 0.58);
+}
+
+.mini-cheek-a { left: 7px; }
+.mini-cheek-b { right: 7px; }
+
+.mini-mouth {
+  z-index: 2;
+  left: 50%;
+  top: 14px;
+  width: 13px;
+  height: 7px;
+  transform: translateX(-50%);
+  border-bottom: 2px solid #2c5b40;
+  border-radius: 0 0 50% 50%;
+}
+
+.mini-foot {
+  z-index: -1;
+  width: 20px;
+  height: 9px;
+  border-radius: 99px;
+  background: #559c40;
+}
+
+.mini-foot-a { left: -10px; top: 9px; transform: rotate(-18deg); }
+.mini-foot-b { right: -10px; top: 9px; transform: rotate(18deg); }
+.mini-foot-c { left: -7px; bottom: -3px; transform: rotate(12deg); }
+.mini-foot-d { right: -7px; bottom: -3px; transform: rotate(-12deg); }
 
 .reed {
   position: absolute;
@@ -482,6 +541,11 @@ button {
 @keyframes press {
   0%, 100% { transform: translateY(-4px); }
   48%, 60% { transform: translateY(5px) scale(0.92); }
+}
+
+@keyframes mini-breathe {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+  48% { transform: translateX(-50%) translateY(-2px) scale(1.025, 0.975); }
 }
 
 @media (max-width: 760px), (max-height: 760px) {
