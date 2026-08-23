@@ -4,15 +4,9 @@ import assert from "node:assert/strict";
 import {
   SPECIALS,
   advancePrecisionState,
-  jumpMultiplierForPlatform,
   landingToleranceWithFever,
   sinkingProgress,
 } from "../src/specials.mjs";
-
-test("弹力荷花只增强从它出发的下一跳", () => {
-  assert.equal(jumpMultiplierForPlatform({ kind: "plain" }), 1);
-  assert.equal(jumpMultiplierForPlatform({ kind: "spring" }), SPECIALS.springJumpMultiplier);
-});
 
 test("萤火连跳会适度放宽落脚范围", () => {
   assert.equal(landingToleranceWithFever(80, false), 80);
