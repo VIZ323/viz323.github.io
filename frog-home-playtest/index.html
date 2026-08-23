@@ -32,6 +32,11 @@
           <div id="progressFill" class="progress-fill"></div>
         </div>
 
+        <div class="goal-row" aria-live="polite">
+          <span id="missionText">本局目标 · 准备出发</span>
+          <span id="milestoneText">奖励荷叶 0/10</span>
+        </div>
+
         <div id="hint" class="hint">
           <span class="finger">☝</span>
           <div><strong>按住屏幕蓄力</strong><small>松开就会跳出去</small></div>
@@ -59,6 +64,25 @@
             <span class="story-kicker">无限模式 · 一个手指就能玩</span>
             <h1>小蛙回家路</h1>
             <p>荷塘的路还在向前延伸。<br />踩着荷叶，看看小蛙今天能走多远吧。</p>
+            <div id="missionPreview" class="mission-preview">本局目标：前进 5 步 · 奖励 2 ✦</div>
+            <div class="collection-head">
+              <strong>选择小蛙</strong>
+              <span>拥有 <b id="startFireflyText">0</b> ✦</span>
+            </div>
+            <div id="skinShop" class="skin-shop" aria-label="小蛙皮肤">
+              <button class="skin-option selected" type="button" data-skin-id="leaf">
+                <span class="skin-swatch skin-leaf" aria-hidden="true"></span>
+                <strong>荷叶绿</strong><small>已使用</small>
+              </button>
+              <button class="skin-option" type="button" data-skin-id="berry">
+                <span class="skin-swatch skin-berry" aria-hidden="true"></span>
+                <strong>莓果粉</strong><small>8 ✦</small>
+              </button>
+              <button class="skin-option" type="button" data-skin-id="moon">
+                <span class="skin-swatch skin-moon" aria-hidden="true"></span>
+                <strong>月光蓝</strong><small>20 ✦</small>
+              </button>
+            </div>
             <button id="startButton" class="primary-button" type="button">开始挑战</button>
             <small>操作：按住蓄力，松开跳跃</small>
           </div>
@@ -73,11 +97,13 @@
               <div class="score-line"><span>本次前进</span><strong id="failSteps">0 步</strong></div>
               <div class="score-line"><span>历史最佳</span><strong id="failBest">0 步</strong></div>
               <div class="score-line"><span>精准落地</span><strong id="failPerfect">0 次</strong></div>
+              <div class="score-line"><span>本局收集</span><strong id="failFireflies">+0 ✦</strong></div>
             </div>
             <button id="reviveButton" class="primary-button ad-button" type="button">
               <span>▶</span> 蜻蜓救援
             </button>
             <button id="restartButton" class="text-button" type="button">重新挑战</button>
+            <button id="homeButton" class="text-button home-button" type="button">返回换装</button>
             <small id="rescueNote">每局可以使用一次蜻蜓救援</small>
           </div>
         </div>
