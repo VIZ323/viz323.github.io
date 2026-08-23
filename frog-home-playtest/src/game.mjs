@@ -28,7 +28,6 @@ import {
 import {
   SPECIALS,
   advancePrecisionState,
-  jumpMultiplierForPlatform,
   landingToleranceWithFever,
   sinkingProgress,
 } from "./specials.mjs";
@@ -423,16 +422,12 @@ export class FrogGame {
     const target = this.targetPlatform();
     if (!current || !target || !this.ui.powerTarget) return;
     const distance = Math.hypot(target.x - current.x, target.y - current.y);
-    const jumpMultiplier = jumpMultiplierForPlatform(current);
     const landingTolerance = landingToleranceWithFever(
       landingToleranceForPlatform(target),
       this.feverJumps > 0,
     );
     const guideScale = target.step <= 10 ? 0.82 : 0.66;
-    const window = chargeWindowForLanding(
-      distance / jumpMultiplier,
-      landingTolerance * guideScale / jumpMultiplier,
-    );
+    const window = chargeWindowForLanding(distance, landingTolerance * guideScale);
     const left = Math.round(window.min * 1000) / 10;
     const width = Math.max(2.5, Math.round((window.max - window.min) * 1000) / 10);
     this.ui.powerTarget.style.left = `${left}%`;
@@ -457,8 +452,7 @@ export class FrogGame {
     const current = this.currentPlatform();
     const target = this.targetPlatform();
     if (!target) return;
-    const jumpMultiplier = jumpMultiplierForPlatform(current);
-    const distance = jumpDistanceFromCharge(this.charge) * jumpMultiplier;
+    const distance = jumpDistanceFromCharge(this.charge);
     const start = { x: current.x, y: current.y + 26 };
     const targetPoint = { x: target.x, y: target.y + 26 };
     const direction = directionBetween(start, targetPoint);
@@ -473,7 +467,6 @@ export class FrogGame {
       angle: Math.atan2(direction.y, direction.x),
       progress: 0,
       fever: this.feverJumps > 0,
-      spring: current.kind === "spring",
     };
     this.landing = null;
     this.state = "jumping";
@@ -482,11 +475,6 @@ export class FrogGame {
     this.ui.powerFill.style.width = "0%";
     this.audio.jump();
     this.spawnDust(current.x, current.y + 10);
-    if (current.kind === "spring") {
-      this.spawnSparkles(current.x, current.y + 54, "#ffd96b", 14);
-      this.haptic([10, 18, 10]);
-      track("spring_jump", { step: current.step, multiplier: jumpMultiplier });
-    }
   }
 
   resolveJump() {
@@ -574,7 +562,6 @@ export class FrogGame {
         targetDistance: Math.round(targetDistance),
         combo: this.combo,
         fever: activeJump.fever,
-        spring: activeJump.spring,
       });
       this.spawnRipple(target.x, target.y);
       this.audio.land(perfect);
@@ -598,8 +585,6 @@ export class FrogGame {
         track("sinking_leaf_landed", { step: this.steps, graceMs: SPECIALS.sinkingGraceMs });
       } else if (precisionState.activated) {
         this.showToast(`萤火连跳 · 接下来 ${SPECIALS.feverJumps} 跳更稳！`);
-      } else if (target.kind === "spring") {
-        this.showToast("弹力荷花 · 下一跳会更远");
       } else if (activeJump.fever && this.feverJumps > 0) {
         this.showToast(`萤火连跳 · 还剩 ${this.feverJumps} 跳`);
       } else if (activeJump.fever) {
@@ -635,7 +620,6 @@ export class FrogGame {
       jumpDistance: Math.round(jumpDistance),
       targetDistance: Math.round(targetDistance),
       fever: activeJump.fever,
-      spring: activeJump.spring,
     });
     this.failRun(this.lastMissFeedback, "jump_miss");
   }
@@ -935,7 +919,6 @@ export class FrogGame {
     const isTarget = index === this.currentIndex + 1 && ["idle", "charging", "jumping"].includes(this.state);
     const isRest = platform.kind === "rest";
     const isSinking = platform.kind === "sinking";
-    const isSpring = platform.kind === "spring";
     const isFeverTarget = isTarget && this.feverJumps > 0;
     const radius = platform.radius;
     let impact = 0;
@@ -977,9 +960,9 @@ export class FrogGame {
 
     const leafGradient = ctx.createLinearGradient(screen.x, screen.y - 22, screen.x, screen.y + 30);
     leafGradient.addColorStop(0,
-      isSinking ? "#4f9a70" : isSpring ? "#8cc759" : isRest ? "#77b64c" : "#63b44e");
+      isSinking ? "#4f9a70" : isRest ? "#77b64c" : "#63b44e");
     leafGradient.addColorStop(1,
-      isSinking ? "#245f55" : isSpring ? "#4e8d40" : isRest ? "#397f3d" : "#378841");
+      isSinking ? "#245f55" : isRest ? "#397f3d" : "#378841");
     ctx.save();
     ctx.translate(screen.x, screen.y + impact * 5);
     ctx.rotate(tilt);
@@ -998,22 +981,20 @@ export class FrogGame {
     ctx.stroke();
     ctx.restore();
 
-    if (platform.kind === "flower" || isRest || isSpring) {
+    if (platform.kind === "flower" || isRest) {
       this.drawLotus(
         screen.x - radius * 0.5,
         screen.y - 21 + impact * 4,
-        isRest ? 1.05 : isSpring ? 1.12 : 0.82,
-        isSpring ? "#ffd66e" : "#f7b7c6",
-        isSpring ? "#f08d4d" : "#f3d66b",
+        isRest ? 1.05 : 0.82,
       );
     }
 
-    if (isTarget && (isSinking || isSpring)) {
+    if (isTarget && isSinking) {
       this.drawSpecialBadge(
         screen.x + radius * 0.45,
         screen.y - 37,
-        isSinking ? "快" : "弹",
-        isSinking ? "#2f7462" : "#d88736",
+        "快",
+        "#2f7462",
       );
     }
   }
@@ -1037,19 +1018,19 @@ export class FrogGame {
     ctx.restore();
   }
 
-  drawLotus(x, y, scale, petalColor = "#f7b7c6", centerColor = "#f3d66b") {
+  drawLotus(x, y, scale) {
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
-    ctx.fillStyle = petalColor;
+    ctx.fillStyle = "#f7b7c6";
     for (let i = 0; i < 6; i += 1) {
       ctx.rotate(Math.PI / 3);
       ctx.beginPath();
       ctx.ellipse(0, -9, 7, 13, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = centerColor;
+    ctx.fillStyle = "#f3d66b";
     ctx.beginPath();
     ctx.arc(0, 0, 5, 0, Math.PI * 2);
     ctx.fill();
