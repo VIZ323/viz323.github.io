@@ -7,6 +7,7 @@ import {
   landingToleranceFactorForStep,
   landingToleranceForPlatform,
   rhythmForStep,
+  specialKindForStep,
 } from "../src/endless.mjs";
 
 test("相同种子会生成完全相同的无尽荷塘", () => {
@@ -33,6 +34,20 @@ test("每十步都会出现一片更宽容的休息荷叶", () => {
     assert.equal(platforms[step].kind, "rest");
     assert.ok(platforms[step].radius >= 90);
   }
+});
+
+test("下沉荷叶和弹力荷花按固定节奏出现，不覆盖休息荷叶", () => {
+  assert.equal(specialKindForStep(8), "sinking");
+  assert.equal(specialKindForStep(18), "sinking");
+  assert.equal(specialKindForStep(15), "spring");
+  assert.equal(specialKindForStep(45), "spring");
+  assert.equal(specialKindForStep(30), "rest");
+
+  const platforms = generatePlatforms(50, 20260823);
+  assert.equal(platforms[8].kind, "sinking");
+  assert.equal(platforms[15].kind, "spring");
+  assert.equal(platforms[18].kind, "sinking");
+  assert.equal(platforms[30].kind, "rest");
 });
 
 test("前七十步难度逐段提高，之后按波次安排恢复段", () => {
