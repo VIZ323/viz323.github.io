@@ -265,6 +265,7 @@ button {
   background: rgba(255, 240, 135, 0.3);
   box-shadow: 0 0 0 1px rgba(54, 109, 66, 0.3), 0 0 9px rgba(255, 230, 105, 0.72);
   pointer-events: none;
+  transition: opacity 180ms ease;
 }
 
 .toast {
