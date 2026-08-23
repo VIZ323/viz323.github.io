@@ -520,7 +520,7 @@ export class FrogGame {
         side: landingSide,
         platformStep: target.step,
       };
-      this.cameraKick = perfect ? 4 : edgeLanding ? 7 : 2.5;
+      this.cameraKick = 0;
       const rawCombo = perfect ? this.combo + 1 : 0;
       const precisionState = advancePrecisionState({
         combo: this.combo,
@@ -699,7 +699,7 @@ export class FrogGame {
     this.saveProfile();
     this.ui.sinkingTutorial.classList.remove("visible");
     this.state = "idle";
-    this.showToast("深蓝色荷叶会下沉 · 落稳后尽快跳走");
+    this.showToast("枯黄裂纹荷叶会下沉 · 落稳后尽快跳走");
     track("sinking_tutorial_dismissed", { nextStep: this.targetPlatform()?.step });
   }
 
@@ -984,11 +984,11 @@ export class FrogGame {
       ctx.translate(screen.x, screen.y);
       ctx.scale(pulse, pulse * 0.38);
       ctx.strokeStyle = isSinking
-        ? "rgba(31, 105, 93, 0.94)"
+        ? "rgba(150, 119, 48, 0.96)"
         : isFeverTarget
         ? "rgba(255, 232, 77, 0.94)"
         : "rgba(255, 238, 130, 0.7)";
-      ctx.shadowColor = isSinking ? "#78d9c8" : isFeverTarget ? "#fff06f" : "transparent";
+      ctx.shadowColor = isSinking ? "#f2d879" : isFeverTarget ? "#fff06f" : "transparent";
       ctx.shadowBlur = isSinking || isFeverTarget ? 24 : 0;
       ctx.lineWidth = isSinking || isFeverTarget ? 13 : 10;
       if (isSinking) ctx.setLineDash([18, 10]);
@@ -1010,9 +1010,9 @@ export class FrogGame {
 
     const leafGradient = ctx.createLinearGradient(screen.x, screen.y - 22, screen.x, screen.y + 30);
     leafGradient.addColorStop(0,
-      isSinking ? "#3f9184" : isRest ? "#77b64c" : "#63b44e");
+      isSinking ? "#b6aa52" : isRest ? "#77b64c" : "#63b44e");
     leafGradient.addColorStop(1,
-      isSinking ? "#123f42" : isRest ? "#397f3d" : "#378841");
+      isSinking ? "#69643b" : isRest ? "#397f3d" : "#378841");
     ctx.save();
     ctx.translate(screen.x, screen.y + impact * 5);
     ctx.rotate(tilt);
@@ -1023,12 +1023,13 @@ export class FrogGame {
     ctx.lineTo(3, 0);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = isSinking ? "rgba(175, 235, 215, 0.72)" : "rgba(29, 112, 54, 0.72)";
+    ctx.strokeStyle = isSinking ? "rgba(239, 218, 139, 0.82)" : "rgba(29, 112, 54, 0.72)";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(-radius * 0.76, radius * 0.12);
     ctx.stroke();
+    if (isSinking) this.drawSinkingCracks(radius);
     ctx.restore();
 
     if (isSinking) {
@@ -1048,7 +1049,7 @@ export class FrogGame {
         screen.x + radius * 0.45,
         screen.y - 42,
         "↓ 下沉",
-        "#2f7462",
+        "#80642f",
       );
     }
     ctx.restore();
@@ -1078,7 +1079,7 @@ export class FrogGame {
     const pulse = 0.65 + Math.sin(time * 0.009) * 0.18;
     ctx.save();
     ctx.globalAlpha *= Math.max(0.2, pulse - sinkAmount * 0.35);
-    ctx.strokeStyle = "#b9eee0";
+    ctx.strokeStyle = "#fff1b0";
     ctx.lineWidth = 5;
     ctx.lineCap = "round";
     for (const offset of [-14, 14]) {
@@ -1088,7 +1089,7 @@ export class FrogGame {
       ctx.lineTo(x + offset + 7, y - 4);
       ctx.stroke();
     }
-    ctx.fillStyle = "rgba(218, 255, 246, 0.86)";
+    ctx.fillStyle = "rgba(255, 245, 190, 0.88)";
     for (let index = 0; index < 3; index += 1) {
       const angle = time * 0.0012 + index * 2.15;
       ctx.beginPath();
@@ -1101,6 +1102,31 @@ export class FrogGame {
       );
       ctx.fill();
     }
+    ctx.restore();
+  }
+
+  drawSinkingCracks(radius) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = "rgba(85, 65, 35, 0.88)";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const crack = (points) => {
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let index = 1; index < points.length; index += 1) {
+        ctx.lineTo(points[index][0], points[index][1]);
+      }
+      ctx.stroke();
+    };
+
+    crack([[-3, 0], [12, -13], [22, 3], [37, -7], [radius * 0.74, -2]]);
+    crack([[12, -13], [6, -27], [-3, -35]]);
+    crack([[22, 3], [17, 18], [28, 30]]);
+    crack([[-7, 1], [-23, -10], [-37, 2], [-radius * 0.7, -7]]);
+    crack([[-23, -10], [-20, -27], [-29, -35]]);
     ctx.restore();
   }
 
