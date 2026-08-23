@@ -17,17 +17,28 @@ test("移除皮肤后，旧存档会退回已解锁皮肤消耗的萤火虫", ()
     selectedSkin: "unknown",
     missionCursor: -3,
   });
-  assert.deepEqual(profile, { version: 2, fireflies: 20, missionCursor: 0 });
+  assert.deepEqual(profile, {
+    version: 3,
+    fireflies: 20,
+    missionCursor: 0,
+    seenSinkingTutorial: false,
+  });
 });
 
 test("新版存档不会重复获得已下线皮肤退款", () => {
   const profile = normalizeProfile({
-    version: 2,
+    version: 3,
     fireflies: 20,
     unlockedSkins: ["berry", "moon"],
     missionCursor: 3,
+    seenSinkingTutorial: true,
   });
-  assert.deepEqual(profile, { version: 2, fireflies: 20, missionCursor: 3 });
+  assert.deepEqual(profile, {
+    version: 3,
+    fireflies: 20,
+    missionCursor: 3,
+    seenSinkingTutorial: true,
+  });
 });
 
 test("三种局内目标会循环出现并正确计算进度", () => {
