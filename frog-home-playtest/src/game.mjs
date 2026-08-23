@@ -969,13 +969,9 @@ export class FrogGame {
     ctx.save();
     ctx.globalAlpha = Math.min(submergedOpacity, departureOpacity);
     let impact = 0;
-    let tilt = 0;
     if (this.landing?.platformStep === platform.step) {
       const progress = Math.min(1, Math.max(0, (time - this.landing.startedAt) / this.landing.duration));
-      impact = Math.sin(progress * Math.PI) * (this.landing.kind === "edge" ? 1 : 0.72);
-      if (this.landing.kind === "edge") {
-        tilt = this.landing.side * 0.09 * Math.sin(progress * Math.PI) * (1 - progress * 0.45);
-      }
+      impact = Math.sin(progress * Math.PI) * (this.landing.kind === "edge" ? 0.46 : 0.3);
     }
 
     if (isTarget) {
@@ -1000,7 +996,6 @@ export class FrogGame {
 
     ctx.save();
     ctx.translate(screen.x, screen.y + 8 + impact * 7);
-    ctx.rotate(tilt * 0.35);
     ctx.scale(1, 0.34);
     ctx.fillStyle = "rgba(26, 91, 76, 0.15)";
     ctx.beginPath();
@@ -1015,7 +1010,6 @@ export class FrogGame {
       isSinking ? "#69643b" : isRest ? "#397f3d" : "#378841");
     ctx.save();
     ctx.translate(screen.x, screen.y + impact * 5);
-    ctx.rotate(tilt);
     ctx.scale(1 + impact * 0.035 - sinkAmount * 0.08, 0.36 - impact * 0.045 - sinkAmount * 0.08);
     ctx.fillStyle = leafGradient;
     ctx.beginPath();
