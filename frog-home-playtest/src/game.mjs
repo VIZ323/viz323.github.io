@@ -24,6 +24,7 @@ import {
   missionForCursor,
   normalizeProfile,
   progressForMission,
+  recordChallengeForBest,
 } from "./progression.mjs";
 import {
   SPECIALS,
@@ -279,10 +280,9 @@ export class FrogGame {
   }
 
   updateCollectionUi() {
-    const previewMission = this.mission ?? missionForCursor(this.profile.missionCursor);
     this.ui.startFireflyText.textContent = String(this.profile.fireflies);
     this.ui.fireflyText.textContent = String(this.profile.fireflies);
-    this.ui.missionPreview.textContent = `本局目标：${previewMission.label} · 奖励 ${previewMission.reward} ✦`;
+    this.ui.missionPreview.textContent = recordChallengeForBest(this.bestScore);
   }
 
   resetPlatforms() {
