@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  NEW_PLAYER_ENCOURAGEMENT_COUNT,
+  RECORD_ENCOURAGEMENT_COUNT,
   feedbackForMiss,
   milestoneRewardForStep,
   missionForCursor,
@@ -61,6 +63,21 @@ test("首页目标会结合历史最佳鼓励玩家突破纪录", () => {
   assert.equal(
     recordChallengeForBest(8.9),
     "历史最佳 8 步 · 本局冲击 9 步，超越昨天的自己！",
+  );
+  const newPlayerCopies = Array.from(
+    { length: NEW_PLAYER_ENCOURAGEMENT_COUNT },
+    (_, index) => recordChallengeForBest(0, index),
+  );
+  const recordCopies = Array.from(
+    { length: RECORD_ENCOURAGEMENT_COUNT },
+    (_, index) => recordChallengeForBest(25, index),
+  );
+  assert.equal(new Set(newPlayerCopies).size, 3);
+  assert.equal(new Set(recordCopies).size, 6);
+  assert.ok(recordCopies.every((copy) => copy.includes("历史最佳 25 步 · 本局冲击 26 步")));
+  assert.equal(
+    recordChallengeForBest(25, RECORD_ENCOURAGEMENT_COUNT),
+    recordChallengeForBest(25, 0),
   );
 });
 

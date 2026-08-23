@@ -19,6 +19,7 @@ import {
 } from "./endless.mjs";
 import {
   PROFILE_STORAGE_KEY,
+  RECORD_ENCOURAGEMENT_COUNT,
   feedbackForMiss,
   milestoneRewardForStep,
   missionForCursor,
@@ -107,6 +108,7 @@ export class FrogGame {
     this.audio = new TinyAudio();
     this.state = "ready";
     this.bestScore = this.loadBestScore();
+    this.homeEncouragementIndex = Math.floor(Math.random() * RECORD_ENCOURAGEMENT_COUNT);
     this.profile = this.loadProfile();
     this.recordToBeat = this.bestScore;
     this.platforms = [];
@@ -282,7 +284,10 @@ export class FrogGame {
   updateCollectionUi() {
     this.ui.startFireflyText.textContent = String(this.profile.fireflies);
     this.ui.fireflyText.textContent = String(this.profile.fireflies);
-    this.ui.missionPreview.textContent = recordChallengeForBest(this.bestScore);
+    this.ui.missionPreview.textContent = recordChallengeForBest(
+      this.bestScore,
+      this.homeEncouragementIndex,
+    );
   }
 
   resetPlatforms() {
@@ -407,6 +412,7 @@ export class FrogGame {
     this.ui.failOverlay.classList.remove("visible");
     this.ui.sinkingTutorial.classList.remove("visible");
     this.ui.startOverlay.classList.add("visible");
+    this.homeEncouragementIndex = (this.homeEncouragementIndex + 1) % RECORD_ENCOURAGEMENT_COUNT;
     this.updateCollectionUi();
     this.updateUi();
   }
