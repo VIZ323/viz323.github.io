@@ -19,19 +19,36 @@ export function createSeededRandom(seed = Date.now()) {
 export function difficultyForStep(step) {
   const normalizedStep = Math.max(1, Math.floor(step));
   if (normalizedStep <= 10) {
-    return { minDistance: 190, maxDistance: 270, minRadius: 82, maxRadius: 94 };
+    return { minDistance: 195, maxDistance: 280, minRadius: 80, maxRadius: 92 };
   }
-  if (normalizedStep <= 30) {
-    return { minDistance: 220, maxDistance: 310, minRadius: 74, maxRadius: 88 };
+  if (normalizedStep <= 20) {
+    return { minDistance: 225, maxDistance: 320, minRadius: 72, maxRadius: 86 };
   }
-  if (normalizedStep <= 60) {
-    return { minDistance: 250, maxDistance: 345, minRadius: 66, maxRadius: 82 };
+  if (normalizedStep <= 40) {
+    return { minDistance: 255, maxDistance: 355, minRadius: 64, maxRadius: 80 };
   }
-  const wave = (normalizedStep - 61) % 20;
+  if (normalizedStep <= 70) {
+    return { minDistance: 280, maxDistance: 385, minRadius: 58, maxRadius: 74 };
+  }
+  const wave = (normalizedStep - 71) % 20;
   const recovery = wave >= 15;
   return recovery
-    ? { minDistance: 230, maxDistance: 315, minRadius: 72, maxRadius: 86 }
-    : { minDistance: 270, maxDistance: 370, minRadius: 60, maxRadius: 78 };
+    ? { minDistance: 250, maxDistance: 340, minRadius: 68, maxRadius: 82 }
+    : { minDistance: 305, maxDistance: 415, minRadius: 52, maxRadius: 68 };
+}
+
+export function landingToleranceFactorForStep(step) {
+  const normalizedStep = Math.max(1, Math.floor(step));
+  if (normalizedStep % ENDLESS.restInterval === 0) return 0.9;
+  if (normalizedStep <= 10) return 0.86;
+  if (normalizedStep <= 20) return 0.82;
+  if (normalizedStep <= 40) return 0.77;
+  if (normalizedStep <= 70) return 0.72;
+  return 0.68;
+}
+
+export function landingToleranceForPlatform(platform) {
+  return platform.radius * landingToleranceFactorForStep(platform.step);
 }
 
 const RHYTHM = Object.freeze([

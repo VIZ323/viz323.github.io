@@ -14,6 +14,7 @@ import {
   ENDLESS,
   EndlessGenerator,
   createStartPlatform,
+  landingToleranceForPlatform,
 } from "./endless.mjs";
 
 const VIEW = { width: 750, height: 1334, baselineY: 1015 };
@@ -55,6 +56,21 @@ const SCENES = Object.freeze([
 
 function sceneForSteps(steps) {
   return SCENES[Math.floor(Math.max(0, steps) / 15) % SCENES.length];
+}
+
+const DIFFICULTY_NOTICES = Object.freeze({
+  10: "热身结束 · 后面的荷叶会更远",
+  20: "提示结束 · 接下来要靠手感啦",
+  40: "进入深水区 · 落脚位置更小",
+  70: "高手水域 · 每一跳都要踩稳",
+});
+
+function powerGuideOpacityForStep(step) {
+  if (step <= 8) return 1;
+  if (step <= 12) return 0.78;
+  if (step <= 16) return 0.52;
+  if (step <= 20) return 0.28;
+  return 0;
 }
 
 export class FrogGame {
@@ -250,11 +266,14 @@ export class FrogGame {
     const target = this.targetPlatform();
     if (!current || !target || !this.ui.powerTarget) return;
     const distance = Math.hypot(target.x - current.x, target.y - current.y);
-    const window = chargeWindowForLanding(distance, target.radius * 0.72);
+    const landingTolerance = landingToleranceForPlatform(target);
+    const guideScale = target.step <= 10 ? 0.82 : 0.66;
+    const window = chargeWindowForLanding(distance, landingTolerance * guideScale);
     const left = Math.round(window.min * 1000) / 10;
     const width = Math.max(2.5, Math.round((window.max - window.min) * 1000) / 10);
     this.ui.powerTarget.style.left = `${left}%`;
     this.ui.powerTarget.style.width = `${width}%`;
+    this.ui.powerTarget.style.opacity = String(powerGuideOpacityForStep(target.step));
   }
 
   cancelCharge() {
@@ -297,7 +316,7 @@ export class FrogGame {
   resolveJump() {
     const { target } = this.jump;
     const endpoint = { x: this.frog.x, y: this.frog.y - 26 };
-    const hit = didLand(endpoint, target);
+    const hit = didLand(endpoint, target, landingToleranceForPlatform(target));
     const error = landingError(endpoint, target);
     if (hit) {
       const landingSide = Math.sign(endpoint.x - target.x) || 1;
@@ -345,7 +364,10 @@ export class FrogGame {
       this.prunePlatforms();
       this.ensurePlatforms();
       this.updateUi();
-      if (this.steps > 0 && this.steps % 15 === 0) {
+      const difficultyNotice = DIFFICULTY_NOTICES[this.steps];
+      if (difficultyNotice) {
+        this.showToast(difficultyNotice);
+      } else if (this.steps > 0 && this.steps % 15 === 0) {
         this.showToast(`前方 · ${sceneForSteps(this.steps).name}`);
       } else if (this.steps > 0 && this.steps % 10 === 0) {
         this.showToast(`${this.steps} 步 · 在大荷叶上歇一歇`);
