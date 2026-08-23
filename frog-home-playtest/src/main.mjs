@@ -4,6 +4,8 @@ const ui = {
   stageText: document.querySelector("#stageText"),
   bestText: document.querySelector("#bestText"),
   fireflyText: document.querySelector("#fireflyText"),
+  feverPill: document.querySelector("#feverPill"),
+  feverText: document.querySelector("#feverText"),
   comboPill: document.querySelector("#comboPill"),
   comboText: document.querySelector("#comboText"),
   progressFill: document.querySelector("#progressFill"),
