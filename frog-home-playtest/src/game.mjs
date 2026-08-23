@@ -9,6 +9,7 @@ import {
   pointOnJump,
 } from "./physics.mjs";
 import { TinyAudio } from "./audio.mjs";
+import { AMBIENT_SWIMMERS, swimmerPoseAtTime } from "./ambient.mjs";
 import { formatCount, onLocaleChange, t } from "./i18n.mjs";
 import { cameraFollowSpeedForState, cameraTargetForWorldY } from "./camera.mjs";
 import { track } from "./analytics.mjs";
@@ -905,28 +906,20 @@ export class FrogGame {
   drawAmbientEvents(time) {
     const ctx = this.ctx;
     const sceneIndex = Math.floor(this.steps / 15) % SCENES.length;
-    const travel = (time * (0.035 + sceneIndex * 0.004) + this.steps * 91) % 960;
-    const x = -100 + travel;
-    const y = 255 + Math.sin(time * 0.004 + this.steps) * 22;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(Math.sin(time * 0.006) * 0.08);
-    ctx.globalAlpha = 0.48;
-    ctx.strokeStyle = sceneIndex === 3 ? "#f5e990" : "#416f59";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-18, 0);
-    ctx.lineTo(17, 0);
-    ctx.stroke();
-    ctx.fillStyle = sceneIndex === 3 ? "rgba(255,244,151,0.72)" : "rgba(243,255,236,0.62)";
-    ctx.beginPath();
-    ctx.ellipse(-8, -8, 15, 6, -0.38, 0, Math.PI * 2);
-    ctx.ellipse(-8, 8, 15, 6, 0.38, 0, Math.PI * 2);
-    ctx.ellipse(8, -7, 14, 5, 0.35, 0, Math.PI * 2);
-    ctx.ellipse(8, 7, 14, 5, -0.35, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    for (const swimmer of AMBIENT_SWIMMERS) {
+      const pose = swimmerPoseAtTime(swimmer, time, VIEW.width);
+      ctx.save();
+      ctx.translate(pose.x, pose.y);
+      ctx.rotate(pose.rotation);
+      ctx.scale(pose.direction * pose.scale, pose.scale);
+      ctx.globalAlpha = swimmer.alpha;
+      if (swimmer.kind === "shrimp") {
+        this.drawSwimmingShrimp(swimmer);
+      } else {
+        this.drawSwimmingFish(swimmer);
+      }
+      ctx.restore();
+    }
 
     if (sceneIndex === 3) {
       ctx.save();
@@ -943,6 +936,72 @@ export class FrogGame {
       }
       ctx.restore();
     }
+  }
+
+  drawSwimmingFish(swimmer) {
+    const ctx = this.ctx;
+    ctx.fillStyle = swimmer.fin;
+    ctx.beginPath();
+    ctx.moveTo(-20, 0);
+    ctx.lineTo(-37, -13);
+    ctx.lineTo(-34, 0);
+    ctx.lineTo(-37, 13);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = swimmer.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 25, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = swimmer.fin;
+    ctx.beginPath();
+    ctx.ellipse(-2, 5, 10, 4, -0.45, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(246,255,240,0.9)";
+    ctx.beginPath();
+    ctx.arc(13, -3, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#31544b";
+    ctx.beginPath();
+    ctx.arc(14, -3, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawSwimmingShrimp(swimmer) {
+    const ctx = this.ctx;
+    ctx.strokeStyle = swimmer.fin;
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(14, -3);
+    ctx.quadraticCurveTo(30, -15, 39, -6);
+    ctx.moveTo(14, -1);
+    ctx.quadraticCurveTo(31, -8, 41, 3);
+    ctx.stroke();
+
+    ctx.fillStyle = swimmer.fin;
+    ctx.beginPath();
+    ctx.ellipse(-25, -7, 11, 5, -0.45, 0, Math.PI * 2);
+    ctx.ellipse(-26, 6, 11, 5, 0.42, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = swimmer.body;
+    for (let index = 0; index < 5; index += 1) {
+      ctx.beginPath();
+      ctx.ellipse(-15 + index * 7, Math.sin(index * 0.8) * 2, 8, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "rgba(255,248,231,0.92)";
+    ctx.beginPath();
+    ctx.arc(14, -4, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5f4b45";
+    ctx.beginPath();
+    ctx.arc(15, -4, 1.2, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   drawPathGuide() {
