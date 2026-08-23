@@ -10,6 +10,7 @@ import {
   pointOnJump,
 } from "./physics.mjs";
 import { TinyAudio } from "./audio.mjs";
+import { cameraFollowSpeedForState, cameraTargetForWorldY } from "./camera.mjs";
 import {
   ENDLESS,
   EndlessGenerator,
@@ -121,6 +122,15 @@ export class FrogGame {
     VIEW.baselineY = Math.round(VIEW.height * 0.76);
     this.canvas.width = VIEW.width;
     this.canvas.height = VIEW.height;
+    if (this.frog) this.updateCameraTarget();
+  }
+
+  updateCameraTarget(worldY = this.frog.y) {
+    this.cameraTargetY = cameraTargetForWorldY(
+      worldY,
+      VIEW.height,
+      VIEW.baselineY,
+    );
   }
 
   bindInput() {
@@ -239,7 +249,7 @@ export class FrogGame {
     const platform = this.currentPlatform();
     this.frog.x = platform.x;
     this.frog.y = platform.y + 26;
-    this.cameraTargetY = Math.max(0, platform.y - 500);
+    this.updateCameraTarget();
     this.jump = null;
     this.state = "idle";
     for (let offset = 1; offset <= 2; offset += 1) {
@@ -324,6 +334,7 @@ export class FrogGame {
       this.steps += 1;
       this.frog.x = target.x;
       this.frog.y = target.y + 26;
+      this.updateCameraTarget();
       const perfect = error <= Math.max(18, target.radius * 0.24);
       const edgeLanding = !perfect && error > target.radius * 0.62;
       this.landing = {
@@ -360,7 +371,6 @@ export class FrogGame {
       this.audio.land(perfect);
       this.haptic(perfect ? 18 : edgeLanding ? [12, 22, 14] : 9);
       this.jump = null;
-      this.cameraTargetY = Math.max(0, target.y - 500);
       this.prunePlatforms();
       this.ensurePlatforms();
       this.updateUi();
@@ -427,6 +437,9 @@ export class FrogGame {
       );
       this.frog.x = point.x;
       this.frog.y = point.y;
+      const routeY = this.jump.start.y
+        + this.jump.direction.y * this.jump.distance * this.jump.progress;
+      this.updateCameraTarget(routeY);
       if (progress >= 1) this.resolveJump();
     }
 
@@ -434,7 +447,8 @@ export class FrogGame {
       this.landing = null;
     }
 
-    this.cameraY += (this.cameraTargetY - this.cameraY) * Math.min(1, delta * 4.2);
+    const cameraFollowSpeed = cameraFollowSpeedForState(this.state);
+    this.cameraY += (this.cameraTargetY - this.cameraY) * Math.min(1, delta * cameraFollowSpeed);
     this.cameraKick *= Math.pow(0.018, delta);
     this.updateParticles(delta);
   }
