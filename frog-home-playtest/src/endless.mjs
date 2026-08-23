@@ -4,14 +4,12 @@ export const ENDLESS = Object.freeze({
   previewCount: 7,
   restInterval: 10,
   sinkingOffset: 8,
-  springInterval: 15,
 });
 
 export function specialKindForStep(step) {
   const normalizedStep = Math.max(1, Math.floor(step));
   if (normalizedStep % ENDLESS.restInterval === 0) return "rest";
   if (normalizedStep % ENDLESS.restInterval === ENDLESS.sinkingOffset) return "sinking";
-  if (normalizedStep % ENDLESS.springInterval === 0) return "spring";
   return null;
 }
 
