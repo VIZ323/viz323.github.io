@@ -25,6 +25,13 @@ import {
   normalizeProfile,
   progressForMission,
 } from "./progression.mjs";
+import {
+  SPECIALS,
+  advancePrecisionState,
+  jumpMultiplierForPlatform,
+  landingToleranceWithFever,
+  sinkingProgress,
+} from "./specials.mjs";
 
 const VIEW = { width: 750, height: 1334, baselineY: 1015 };
 const FROG_COLORS = Object.freeze({
@@ -109,6 +116,9 @@ export class FrogGame {
     this.combo = 0;
     this.bestCombo = 0;
     this.perfectCount = 0;
+    this.feverJumps = 0;
+    this.sinkingStartedAt = 0;
+    this.sinkingArmed = false;
     this.reviveUsed = false;
     this.mission = null;
     this.lastMissFeedback = null;
@@ -313,6 +323,9 @@ export class FrogGame {
     this.combo = 0;
     this.bestCombo = 0;
     this.perfectCount = 0;
+    this.feverJumps = 0;
+    this.sinkingStartedAt = 0;
+    this.sinkingArmed = false;
     this.reviveUsed = false;
     this.mission = null;
     this.lastMissFeedback = null;
@@ -365,6 +378,8 @@ export class FrogGame {
     this.updateCameraTarget();
     this.jump = null;
     this.state = "idle";
+    this.sinkingArmed = platform.kind === "sinking";
+    this.sinkingStartedAt = this.sinkingArmed ? performance.now() : 0;
     for (let offset = 1; offset <= 2; offset += 1) {
       const rescuePlatform = this.platforms[this.currentIndex + offset];
       if (rescuePlatform) rescuePlatform.radius = Math.max(rescuePlatform.radius, 84 - offset * 3);
@@ -391,6 +406,10 @@ export class FrogGame {
   }
 
   beginCharge() {
+    if (this.currentPlatform()?.kind === "sinking") {
+      this.sinkingArmed = false;
+      this.sinkingStartedAt = 0;
+    }
     this.state = "charging";
     this.chargeStartedAt = performance.now();
     this.charge = 0;
@@ -404,9 +423,16 @@ export class FrogGame {
     const target = this.targetPlatform();
     if (!current || !target || !this.ui.powerTarget) return;
     const distance = Math.hypot(target.x - current.x, target.y - current.y);
-    const landingTolerance = landingToleranceForPlatform(target);
+    const jumpMultiplier = jumpMultiplierForPlatform(current);
+    const landingTolerance = landingToleranceWithFever(
+      landingToleranceForPlatform(target),
+      this.feverJumps > 0,
+    );
     const guideScale = target.step <= 10 ? 0.82 : 0.66;
-    const window = chargeWindowForLanding(distance, landingTolerance * guideScale);
+    const window = chargeWindowForLanding(
+      distance / jumpMultiplier,
+      landingTolerance * guideScale / jumpMultiplier,
+    );
     const left = Math.round(window.min * 1000) / 10;
     const width = Math.max(2.5, Math.round((window.max - window.min) * 1000) / 10);
     this.ui.powerTarget.style.left = `${left}%`;
@@ -417,6 +443,10 @@ export class FrogGame {
   cancelCharge() {
     this.state = "idle";
     this.charge = 0;
+    if (this.currentPlatform()?.kind === "sinking") {
+      this.sinkingArmed = true;
+      this.sinkingStartedAt = performance.now();
+    }
     this.ui.powerWrap.classList.remove("visible");
     this.ui.powerFill.style.width = "0%";
   }
@@ -424,10 +454,11 @@ export class FrogGame {
   releaseJump() {
     const heldFor = performance.now() - this.chargeStartedAt;
     this.charge = chargeFromDuration(heldFor);
-    const distance = jumpDistanceFromCharge(this.charge);
     const current = this.currentPlatform();
     const target = this.targetPlatform();
     if (!target) return;
+    const jumpMultiplier = jumpMultiplierForPlatform(current);
+    const distance = jumpDistanceFromCharge(this.charge) * jumpMultiplier;
     const start = { x: current.x, y: current.y + 26 };
     const targetPoint = { x: target.x, y: target.y + 26 };
     const direction = directionBetween(start, targetPoint);
@@ -441,6 +472,8 @@ export class FrogGame {
       arcHeight: 116 + distance * 0.25,
       angle: Math.atan2(direction.y, direction.x),
       progress: 0,
+      fever: this.feverJumps > 0,
+      spring: current.kind === "spring",
     };
     this.landing = null;
     this.state = "jumping";
@@ -449,17 +482,27 @@ export class FrogGame {
     this.ui.powerFill.style.width = "0%";
     this.audio.jump();
     this.spawnDust(current.x, current.y + 10);
+    if (current.kind === "spring") {
+      this.spawnSparkles(current.x, current.y + 54, "#ffd96b", 14);
+      this.haptic([10, 18, 10]);
+      track("spring_jump", { step: current.step, multiplier: jumpMultiplier });
+    }
   }
 
   resolveJump() {
-    const { target } = this.jump;
-    const jumpDistance = this.jump.distance;
+    const activeJump = this.jump;
+    const { target } = activeJump;
+    const jumpDistance = activeJump.distance;
     const targetDistance = Math.hypot(
-      target.x - this.jump.start.x,
-      target.y + 26 - this.jump.start.y,
+      target.x - activeJump.start.x,
+      target.y + 26 - activeJump.start.y,
     );
     const endpoint = { x: this.frog.x, y: this.frog.y - 26 };
-    const hit = didLand(endpoint, target, landingToleranceForPlatform(target));
+    const landingTolerance = landingToleranceWithFever(
+      landingToleranceForPlatform(target),
+      activeJump.fever,
+    );
+    const hit = didLand(endpoint, target, landingTolerance);
     const error = landingError(endpoint, target);
     if (hit) {
       const landingSide = Math.sign(endpoint.x - target.x) || 1;
@@ -478,19 +521,32 @@ export class FrogGame {
         platformStep: target.step,
       };
       this.cameraKick = perfect ? 4 : edgeLanding ? 7 : 2.5;
+      const rawCombo = perfect ? this.combo + 1 : 0;
+      const precisionState = advancePrecisionState({
+        combo: this.combo,
+        feverJumps: this.feverJumps,
+        perfect,
+        feverAtLaunch: activeJump.fever,
+      });
+      this.bestCombo = Math.max(this.bestCombo, rawCombo);
+      this.combo = precisionState.combo;
+      this.feverJumps = precisionState.feverJumps;
       if (perfect) {
-        this.combo += 1;
-        this.bestCombo = Math.max(this.bestCombo, this.combo);
         this.perfectCount += 1;
         this.awardFireflies(1, "perfect_landing");
-        this.showToast(this.combo >= 3
-          ? `稳稳连击 ×${this.combo} · 萤火虫 +1`
-          : "稳稳落下 · 萤火虫 +1");
         this.spawnSparkles(target.x, target.y + 58, "#ffd45c", 10);
       } else {
-        this.combo = 0;
-        this.showToast(edgeLanding ? "好险！踩住边边啦" : "落稳了");
         if (edgeLanding) this.spawnEdgeDrops(target.x, target.y, landingSide);
+      }
+      if (precisionState.activated) {
+        this.spawnSparkles(target.x, target.y + 62, "#fff28b", 24);
+        track("precision_fever_start", { step: this.steps, perfectCount: this.perfectCount });
+      } else if (activeJump.fever) {
+        track("precision_fever_jump", {
+          step: this.steps,
+          outcome: perfect ? "perfect" : edgeLanding ? "edge" : "safe",
+          remaining: this.feverJumps,
+        });
       }
       let newRecord = false;
       if (this.steps > this.bestScore) {
@@ -517,17 +573,38 @@ export class FrogGame {
         jumpDistance: Math.round(jumpDistance),
         targetDistance: Math.round(targetDistance),
         combo: this.combo,
+        fever: activeJump.fever,
+        spring: activeJump.spring,
       });
       this.spawnRipple(target.x, target.y);
       this.audio.land(perfect);
-      this.haptic(perfect ? 18 : edgeLanding ? [12, 22, 14] : 9);
+      this.haptic(precisionState.activated
+        ? [18, 24, 18]
+        : perfect
+          ? 18
+          : edgeLanding
+            ? [12, 22, 14]
+            : 9);
       this.jump = null;
+      this.sinkingArmed = target.kind === "sinking";
+      this.sinkingStartedAt = this.sinkingArmed ? performance.now() : 0;
       this.prunePlatforms();
       this.ensurePlatforms();
       this.updateUi();
       const difficultyNotice = DIFFICULTY_NOTICES[this.steps];
       const rewardTotal = missionReward + milestoneReward;
-      if (rewardTotal > 0) {
+      if (target.kind === "sinking") {
+        this.showToast("下沉荷叶 · 快按住准备下一跳！");
+        track("sinking_leaf_landed", { step: this.steps, graceMs: SPECIALS.sinkingGraceMs });
+      } else if (precisionState.activated) {
+        this.showToast(`萤火连跳 · 接下来 ${SPECIALS.feverJumps} 跳更稳！`);
+      } else if (target.kind === "spring") {
+        this.showToast("弹力荷花 · 下一跳会更远");
+      } else if (activeJump.fever && this.feverJumps > 0) {
+        this.showToast(`萤火连跳 · 还剩 ${this.feverJumps} 跳`);
+      } else if (activeJump.fever) {
+        this.showToast("萤火连跳结束 · 继续踩稳吧");
+      } else if (rewardTotal > 0) {
         const prefix = milestoneReward > 0 && difficultyNotice
           ? difficultyNotice.split(" · ")[0]
           : missionReward > 0 && milestoneReward > 0
@@ -557,8 +634,33 @@ export class FrogGame {
       error: Math.round(error),
       jumpDistance: Math.round(jumpDistance),
       targetDistance: Math.round(targetDistance),
+      fever: activeJump.fever,
+      spring: activeJump.spring,
     });
+    this.failRun(this.lastMissFeedback, "jump_miss");
+  }
+
+  failFromSinking() {
+    const platform = this.currentPlatform();
+    this.frog.y = platform.y - 12;
+    const feedback = {
+      kind: "sinking",
+      title: "荷叶沉下去了",
+      message: "落到深色荷叶后，要尽快按住开始下一跳。",
+    };
+    track("jump_result", {
+      outcome: "sinking_timeout",
+      step: this.steps,
+      platformStep: platform.step,
+    });
+    this.failRun(feedback, "sinking_timeout");
+  }
+
+  failRun(feedback, reason) {
+    this.lastMissFeedback = feedback;
     this.state = "failed";
+    this.sinkingArmed = false;
+    this.sinkingStartedAt = 0;
     this.audio.splash();
     this.haptic([18, 35, 24]);
     this.cameraKick = 10;
@@ -568,6 +670,7 @@ export class FrogGame {
     track("game_fail", {
       steps: this.steps,
       missKind: this.lastMissFeedback.kind,
+      reason,
       revived: this.reviveUsed,
       runFireflies: this.runFireflies,
       durationMs: Math.max(0, Math.round(performance.now() - this.runStartedAt)),
@@ -607,6 +710,15 @@ export class FrogGame {
   }
 
   update(time, delta) {
+    if (
+      this.state === "idle"
+      && this.sinkingArmed
+      && this.currentPlatform()?.kind === "sinking"
+      && sinkingProgress(this.sinkingStartedAt, time) >= 1
+    ) {
+      this.failFromSinking();
+    }
+
     if (this.state === "charging") {
       this.charge = chargeFromDuration(time - this.chargeStartedAt);
       this.ui.powerFill.style.width = `${Math.round(this.charge * 100)}%`;
@@ -811,10 +923,20 @@ export class FrogGame {
 
   drawPlatform(platform, index, time) {
     const screen = this.worldToScreen(platform.x, platform.y);
+    const isCurrentSinking = platform.kind === "sinking"
+      && index === this.currentIndex
+      && this.sinkingArmed;
+    const sinkAmount = isCurrentSinking
+      ? sinkingProgress(this.sinkingStartedAt, time)
+      : 0;
+    screen.y += sinkAmount * 34;
     if (screen.y < -130 || screen.y > VIEW.height + 130) return;
     const ctx = this.ctx;
     const isTarget = index === this.currentIndex + 1 && ["idle", "charging", "jumping"].includes(this.state);
     const isRest = platform.kind === "rest";
+    const isSinking = platform.kind === "sinking";
+    const isSpring = platform.kind === "spring";
+    const isFeverTarget = isTarget && this.feverJumps > 0;
     const radius = platform.radius;
     let impact = 0;
     let tilt = 0;
@@ -831,8 +953,12 @@ export class FrogGame {
       ctx.save();
       ctx.translate(screen.x, screen.y);
       ctx.scale(pulse, pulse * 0.38);
-      ctx.strokeStyle = "rgba(255, 238, 130, 0.7)";
-      ctx.lineWidth = 10;
+      ctx.strokeStyle = isFeverTarget
+        ? "rgba(255, 232, 77, 0.94)"
+        : "rgba(255, 238, 130, 0.7)";
+      ctx.shadowColor = isFeverTarget ? "#fff06f" : "transparent";
+      ctx.shadowBlur = isFeverTarget ? 24 : 0;
+      ctx.lineWidth = isFeverTarget ? 13 : 10;
       ctx.beginPath();
       ctx.arc(0, 0, radius + 13, 0, Math.PI * 2);
       ctx.stroke();
@@ -850,12 +976,14 @@ export class FrogGame {
     ctx.restore();
 
     const leafGradient = ctx.createLinearGradient(screen.x, screen.y - 22, screen.x, screen.y + 30);
-    leafGradient.addColorStop(0, isRest ? "#77b64c" : "#63b44e");
-    leafGradient.addColorStop(1, isRest ? "#397f3d" : "#378841");
+    leafGradient.addColorStop(0,
+      isSinking ? "#4f9a70" : isSpring ? "#8cc759" : isRest ? "#77b64c" : "#63b44e");
+    leafGradient.addColorStop(1,
+      isSinking ? "#245f55" : isSpring ? "#4e8d40" : isRest ? "#397f3d" : "#378841");
     ctx.save();
     ctx.translate(screen.x, screen.y + impact * 5);
     ctx.rotate(tilt);
-    ctx.scale(1 + impact * 0.035, 0.36 - impact * 0.045);
+    ctx.scale(1 + impact * 0.035 - sinkAmount * 0.08, 0.36 - impact * 0.045 - sinkAmount * 0.08);
     ctx.fillStyle = leafGradient;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0.16, Math.PI * 2 - 0.22);
@@ -870,24 +998,58 @@ export class FrogGame {
     ctx.stroke();
     ctx.restore();
 
-    if (platform.kind === "flower" || isRest) {
-      this.drawLotus(screen.x - radius * 0.5, screen.y - 21 + impact * 4, isRest ? 1.05 : 0.82);
+    if (platform.kind === "flower" || isRest || isSpring) {
+      this.drawLotus(
+        screen.x - radius * 0.5,
+        screen.y - 21 + impact * 4,
+        isRest ? 1.05 : isSpring ? 1.12 : 0.82,
+        isSpring ? "#ffd66e" : "#f7b7c6",
+        isSpring ? "#f08d4d" : "#f3d66b",
+      );
+    }
+
+    if (isTarget && (isSinking || isSpring)) {
+      this.drawSpecialBadge(
+        screen.x + radius * 0.45,
+        screen.y - 37,
+        isSinking ? "快" : "弹",
+        isSinking ? "#2f7462" : "#d88736",
+      );
     }
   }
 
-  drawLotus(x, y, scale) {
+  drawSpecialBadge(x, y, label, color) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = "rgba(255, 253, 232, 0.94)";
+    ctx.shadowColor = "rgba(25, 78, 59, 0.16)";
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = color;
+    ctx.font = "900 17px 'PingFang SC', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, 0, 1);
+    ctx.restore();
+  }
+
+  drawLotus(x, y, scale, petalColor = "#f7b7c6", centerColor = "#f3d66b") {
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
-    ctx.fillStyle = "#f7b7c6";
+    ctx.fillStyle = petalColor;
     for (let i = 0; i < 6; i += 1) {
       ctx.rotate(Math.PI / 3);
       ctx.beginPath();
       ctx.ellipse(0, -9, 7, 13, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = "#f3d66b";
+    ctx.fillStyle = centerColor;
     ctx.beginPath();
     ctx.arc(0, 0, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -922,6 +1084,29 @@ export class FrogGame {
       ? Math.sign(this.jump.direction.x)
       : Math.sign((this.targetPlatform()?.x ?? this.frog.x) - this.frog.x);
     const rotation = (this.jump ? this.jump.direction.x * 0.17 * flight : 0) + landingWobble;
+
+    if (this.jump?.fever) {
+      const glow = 0.72 + Math.sin(time * 0.012) * 0.18;
+      ctx.save();
+      ctx.globalAlpha = glow;
+      ctx.strokeStyle = "rgba(255, 239, 111, 0.74)";
+      ctx.lineWidth = 10;
+      ctx.lineCap = "round";
+      ctx.shadowColor = "#fff076";
+      ctx.shadowBlur = 24;
+      ctx.beginPath();
+      ctx.moveTo(
+        screen.x - this.jump.direction.x * (48 + flight * 34),
+        screen.y + this.jump.direction.y * 18,
+      );
+      ctx.lineTo(screen.x, screen.y);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 247, 152, 0.34)";
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, 58 + flight * 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     ctx.save();
     ctx.globalAlpha = 0.15 * (1 - flight * 0.48);
@@ -1175,7 +1360,9 @@ export class FrogGame {
       this.mission.progress = progress;
       this.ui.missionText.textContent = `${this.mission.label} ${progress}/${this.mission.target}`;
     }
-    this.ui.comboPill.hidden = this.combo < 2;
+    this.ui.feverPill.hidden = this.feverJumps <= 0;
+    this.ui.feverText.textContent = `${this.feverJumps}跳`;
+    this.ui.comboPill.hidden = this.feverJumps > 0 || this.combo < 2;
     this.ui.comboText.textContent = `×${this.combo}`;
   }
 }
