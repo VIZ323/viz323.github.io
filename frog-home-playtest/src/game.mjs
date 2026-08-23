@@ -1,5 +1,4 @@
 import {
-  PHYSICS,
   chargeWindowForLanding,
   chargeFromDuration,
   didLand,
@@ -11,12 +10,22 @@ import {
 } from "./physics.mjs";
 import { TinyAudio } from "./audio.mjs";
 import { cameraFollowSpeedForState, cameraTargetForWorldY } from "./camera.mjs";
+import { track } from "./analytics.mjs";
 import {
   ENDLESS,
   EndlessGenerator,
   createStartPlatform,
   landingToleranceForPlatform,
 } from "./endless.mjs";
+import {
+  PROFILE_STORAGE_KEY,
+  feedbackForMiss,
+  milestoneRewardForStep,
+  missionForCursor,
+  normalizeProfile,
+  progressForMission,
+  skinById,
+} from "./progression.mjs";
 
 const VIEW = { width: 750, height: 1334, baselineY: 1015 };
 
@@ -82,16 +91,20 @@ export class FrogGame {
     this.audio = new TinyAudio();
     this.state = "ready";
     this.bestScore = this.loadBestScore();
+    this.profile = this.loadProfile();
     this.recordToBeat = this.bestScore;
     this.platforms = [];
     this.generator = null;
     this.currentIndex = 0;
     this.steps = 0;
-    this.fireflies = 0;
+    this.runFireflies = 0;
     this.combo = 0;
     this.bestCombo = 0;
     this.perfectCount = 0;
     this.reviveUsed = false;
+    this.mission = null;
+    this.lastMissFeedback = null;
+    this.runStartedAt = 0;
     this.chargeStartedAt = 0;
     this.charge = 0;
     this.cameraY = 0;
@@ -109,6 +122,8 @@ export class FrogGame {
     this.hasJumped = false;
     this.resizeCanvas();
     this.bindInput();
+    this.updateCollectionUi();
+    this.updateUi();
     window.addEventListener("resize", () => this.resizeCanvas());
     requestAnimationFrame((time) => this.loop(time));
   }
@@ -154,12 +169,21 @@ export class FrogGame {
   }
 
   start() {
+    this.clearToast();
     this.reset();
+    this.assignMission();
     this.state = "idle";
+    this.runStartedAt = performance.now();
     this.ui.startOverlay.classList.remove("visible");
     this.ui.failOverlay.classList.remove("visible");
     this.audio.ensureContext();
     this.updateUi();
+    track("game_start", {
+      bestScore: this.bestScore,
+      fireflies: this.profile.fireflies,
+      missionId: this.mission.id,
+      skinId: this.profile.selectedSkin,
+    });
   }
 
   loadBestScore() {
@@ -176,6 +200,110 @@ export class FrogGame {
       window.localStorage.setItem("frog-home-endless-best", String(this.bestScore));
     } catch {
       // 隐私模式或小游戏适配环境可能不提供 localStorage，忽略即可继续游戏。
+    }
+  }
+
+  loadProfile() {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY));
+      return normalizeProfile(stored);
+    } catch {
+      return normalizeProfile(null);
+    }
+  }
+
+  saveProfile() {
+    try {
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(this.profile));
+    } catch {
+      // 隐私模式或小游戏适配环境可能不提供 localStorage，忽略即可继续游戏。
+    }
+  }
+
+  assignMission() {
+    const template = missionForCursor(this.profile.missionCursor);
+    this.profile.missionCursor += 1;
+    this.mission = { ...template, progress: 0, completed: false };
+    this.saveProfile();
+    this.updateCollectionUi();
+    this.updateUi();
+  }
+
+  awardFireflies(amount, source) {
+    const reward = Math.max(0, Math.floor(amount));
+    if (reward === 0) return;
+    this.profile.fireflies += reward;
+    this.runFireflies += reward;
+    this.saveProfile();
+    this.updateCollectionUi();
+    track("fireflies_earned", {
+      amount: reward,
+      source,
+      steps: this.steps,
+      balance: this.profile.fireflies,
+    });
+  }
+
+  updateMissionProgress() {
+    if (!this.mission || this.mission.completed) return 0;
+    this.mission.progress = progressForMission(this.mission, {
+      steps: this.steps,
+      perfectCount: this.perfectCount,
+    });
+    if (this.mission.progress < this.mission.target) return 0;
+    this.mission.completed = true;
+    this.awardFireflies(this.mission.reward, "mission");
+    track("mission_complete", {
+      missionId: this.mission.id,
+      reward: this.mission.reward,
+      steps: this.steps,
+    });
+    return this.mission.reward;
+  }
+
+  chooseSkin(id) {
+    const skin = skinById(id);
+    const unlocked = this.profile.unlockedSkins.includes(skin.id);
+    if (!unlocked) {
+      if (this.profile.fireflies < skin.cost) {
+        this.showToast(`还差 ${skin.cost - this.profile.fireflies} 只萤火虫`);
+        track("skin_unlock_blocked", {
+          skinId: skin.id,
+          cost: skin.cost,
+          balance: this.profile.fireflies,
+        });
+        return false;
+      }
+      this.profile.fireflies -= skin.cost;
+      this.profile.unlockedSkins.push(skin.id);
+      track("skin_unlock", {
+        skinId: skin.id,
+        cost: skin.cost,
+        balance: this.profile.fireflies,
+      });
+    }
+    this.profile.selectedSkin = skin.id;
+    this.saveProfile();
+    this.updateCollectionUi();
+    this.showToast(`已换上 · ${skin.name}`);
+    track("skin_select", { skinId: skin.id });
+    return true;
+  }
+
+  updateCollectionUi() {
+    const previewMission = this.mission ?? missionForCursor(this.profile.missionCursor);
+    this.ui.startFireflyText.textContent = String(this.profile.fireflies);
+    this.ui.fireflyText.textContent = String(this.profile.fireflies);
+    this.ui.missionPreview.textContent = `本局目标：${previewMission.label} · 奖励 ${previewMission.reward} ✦`;
+    this.ui.gameShell.dataset.skin = this.profile.selectedSkin;
+    for (const button of this.ui.skinButtons) {
+      const skin = skinById(button.dataset.skinId);
+      const unlocked = this.profile.unlockedSkins.includes(skin.id);
+      const selected = skin.id === this.profile.selectedSkin;
+      button.classList.toggle("selected", selected);
+      button.classList.toggle("locked", !unlocked);
+      const status = button.querySelector("small");
+      status.textContent = selected ? "已使用" : unlocked ? "可使用" : `${skin.cost} ✦`;
     }
   }
 
@@ -213,11 +341,13 @@ export class FrogGame {
     this.resetPlatforms();
     this.steps = 0;
     this.recordToBeat = this.bestScore;
-    this.fireflies = 0;
+    this.runFireflies = 0;
     this.combo = 0;
     this.bestCombo = 0;
     this.perfectCount = 0;
     this.reviveUsed = false;
+    this.mission = null;
+    this.lastMissFeedback = null;
     this.charge = 0;
     this.jump = null;
     this.landing = null;
@@ -238,13 +368,29 @@ export class FrogGame {
   }
 
   restart() {
+    track("restart", {
+      previousSteps: this.steps,
+      revived: this.reviveUsed,
+      runFireflies: this.runFireflies,
+    });
+    this.clearToast();
     this.reset();
+    this.assignMission();
     this.state = "idle";
+    this.runStartedAt = performance.now();
     this.ui.failOverlay.classList.remove("visible");
+    track("game_start", {
+      bestScore: this.bestScore,
+      fireflies: this.profile.fireflies,
+      missionId: this.mission.id,
+      skinId: this.profile.selectedSkin,
+      source: "restart",
+    });
   }
 
   revive() {
-    if (this.reviveUsed) return;
+    if (this.reviveUsed || this.steps < 3) return;
+    track("revive_click", { steps: this.steps });
     this.reviveUsed = true;
     const platform = this.currentPlatform();
     this.frog.x = platform.x;
@@ -259,6 +405,21 @@ export class FrogGame {
     this.ui.failOverlay.classList.remove("visible");
     this.showToast("蜻蜓把你送回来了");
     this.spawnSparkles(platform.x, platform.y + 48, "#f7cc4d", 12);
+    this.updateUi();
+    track("revive_complete", { steps: this.steps });
+  }
+
+  goHome() {
+    track("return_home", {
+      previousSteps: this.steps,
+      runFireflies: this.runFireflies,
+    });
+    this.clearToast();
+    this.reset();
+    this.state = "ready";
+    this.ui.failOverlay.classList.remove("visible");
+    this.ui.startOverlay.classList.add("visible");
+    this.updateCollectionUi();
     this.updateUi();
   }
 
@@ -325,6 +486,11 @@ export class FrogGame {
 
   resolveJump() {
     const { target } = this.jump;
+    const jumpDistance = this.jump.distance;
+    const targetDistance = Math.hypot(
+      target.x - this.jump.start.x,
+      target.y + 26 - this.jump.start.y,
+    );
     const endpoint = { x: this.frog.x, y: this.frog.y - 26 };
     const hit = didLand(endpoint, target, landingToleranceForPlatform(target));
     const error = landingError(endpoint, target);
@@ -349,7 +515,7 @@ export class FrogGame {
         this.combo += 1;
         this.bestCombo = Math.max(this.bestCombo, this.combo);
         this.perfectCount += 1;
-        this.fireflies += 1;
+        this.awardFireflies(1, "perfect_landing");
         this.showToast(this.combo >= 3
           ? `稳稳连击 ×${this.combo} · 萤火虫 +1`
           : "稳稳落下 · 萤火虫 +1");
@@ -359,14 +525,32 @@ export class FrogGame {
         this.showToast(edgeLanding ? "好险！踩住边边啦" : "落稳了");
         if (edgeLanding) this.spawnEdgeDrops(target.x, target.y, landingSide);
       }
+      let newRecord = false;
       if (this.steps > this.bestScore) {
         this.bestScore = this.steps;
         this.saveBestScore();
         if (this.recordToBeat >= 5 && this.steps === this.recordToBeat + 1) {
-          this.showToast(`新纪录 · ${this.steps} 步！`);
+          newRecord = true;
           this.spawnSparkles(target.x, target.y + 64, "#fff09a", 16);
         }
       }
+      const missionReward = this.updateMissionProgress();
+      const milestoneReward = milestoneRewardForStep(this.steps);
+      if (milestoneReward > 0) {
+        this.awardFireflies(milestoneReward, "milestone");
+        track("milestone_reward", {
+          step: this.steps,
+          reward: milestoneReward,
+        });
+      }
+      track("jump_result", {
+        outcome: perfect ? "perfect" : edgeLanding ? "edge" : "safe",
+        step: this.steps,
+        error: Math.round(error),
+        jumpDistance: Math.round(jumpDistance),
+        targetDistance: Math.round(targetDistance),
+        combo: this.combo,
+      });
       this.spawnRipple(target.x, target.y);
       this.audio.land(perfect);
       this.haptic(perfect ? 18 : edgeLanding ? [12, 22, 14] : 9);
@@ -375,7 +559,19 @@ export class FrogGame {
       this.ensurePlatforms();
       this.updateUi();
       const difficultyNotice = DIFFICULTY_NOTICES[this.steps];
-      if (difficultyNotice) {
+      const rewardTotal = missionReward + milestoneReward;
+      if (rewardTotal > 0) {
+        const prefix = milestoneReward > 0 && difficultyNotice
+          ? difficultyNotice.split(" · ")[0]
+          : missionReward > 0 && milestoneReward > 0
+            ? "目标与阶段完成"
+            : missionReward > 0
+              ? "本局目标完成"
+              : "抵达奖励荷叶";
+        this.showToast(`${prefix} · 萤火虫 +${rewardTotal}`);
+      } else if (newRecord) {
+        this.showToast(`新纪录 · ${this.steps} 步！`);
+      } else if (difficultyNotice) {
         this.showToast(difficultyNotice);
       } else if (this.steps > 0 && this.steps % 15 === 0) {
         this.showToast(`前方 · ${sceneForSteps(this.steps).name}`);
@@ -386,6 +582,15 @@ export class FrogGame {
       return;
     }
 
+    this.lastMissFeedback = feedbackForMiss(jumpDistance, targetDistance);
+    track("jump_result", {
+      outcome: "miss",
+      step: this.steps + 1,
+      missKind: this.lastMissFeedback.kind,
+      error: Math.round(error),
+      jumpDistance: Math.round(jumpDistance),
+      targetDistance: Math.round(targetDistance),
+    });
     this.state = "failed";
     this.audio.splash();
     this.haptic([18, 35, 24]);
@@ -393,6 +598,13 @@ export class FrogGame {
     this.spawnSplash(this.frog.x, this.frog.y - 20);
     this.jump = null;
     this.updateFailUi();
+    track("game_fail", {
+      steps: this.steps,
+      missKind: this.lastMissFeedback.kind,
+      revived: this.reviveUsed,
+      runFireflies: this.runFireflies,
+      durationMs: Math.max(0, Math.round(performance.now() - this.runStartedAt)),
+    });
     window.setTimeout(() => this.ui.failOverlay.classList.add("visible"), 480);
   }
 
@@ -408,15 +620,23 @@ export class FrogGame {
     this.ui.failSteps.textContent = `${this.steps} 步`;
     this.ui.failBest.textContent = `${this.bestScore} 步`;
     this.ui.failPerfect.textContent = `${this.perfectCount} 次`;
-    this.ui.reviveButton.hidden = this.reviveUsed;
-    this.ui.reviveButton.disabled = this.reviveUsed;
-    this.ui.failTitle.textContent = this.reviveUsed ? "这次走到了这里" : "哎呀，掉进水里了";
-    this.ui.failText.textContent = this.reviveUsed
-      ? "休息一下，再向更远的荷塘出发吧。"
-      : "蜻蜓可以把小蛙送回上一片荷叶。";
-    this.ui.rescueNote.textContent = this.reviveUsed
-      ? "本局的蜻蜓救援已经使用过啦"
-      : "每局可以使用一次蜻蜓救援";
+    this.ui.failFireflies.textContent = `+${this.runFireflies} ✦`;
+    const canRevive = !this.reviveUsed && this.steps >= 3;
+    this.ui.reviveButton.hidden = !canRevive;
+    this.ui.reviveButton.disabled = !canRevive;
+    this.ui.restartButton.className = canRevive
+      ? "text-button"
+      : "primary-button restart-primary";
+    this.ui.restartButton.textContent = canRevive ? "重新挑战" : "立即重来";
+    this.ui.failTitle.textContent = this.lastMissFeedback?.title ?? "这次走到了这里";
+    this.ui.failText.textContent = this.lastMissFeedback?.message
+      ?? "休息一下，再向更远的荷塘出发吧。";
+    this.ui.rescueNote.textContent = canRevive
+      ? "观看一次激励广告，回到上一片荷叶"
+      : this.reviveUsed
+        ? "本局的蜻蜓救援已经使用过啦"
+        : "先熟悉手感，立即重来会更快";
+    if (canRevive) track("revive_offer_shown", { steps: this.steps });
   }
 
   update(time, delta) {
@@ -710,6 +930,7 @@ export class FrogGame {
   drawFrog(time) {
     const screen = this.worldToScreen(this.frog.x, this.frog.y);
     const ctx = this.ctx;
+    const colors = skinById(this.profile.selectedSkin).colors;
     const jumpProgress = this.jump?.progress ?? 0;
     const flight = this.state === "jumping" ? Math.sin(jumpProgress * Math.PI) : 0;
     const jumpArc = this.state === "jumping" && this.jump
@@ -756,27 +977,27 @@ export class FrogGame {
     ctx.rotate(rotation);
     ctx.scale(1 + squash * 0.18 - flight * 0.045, 1 - squash + flight * 0.14);
 
-    ctx.fillStyle = "#4c953d";
+    ctx.fillStyle = colors.limb;
     ctx.beginPath();
     ctx.ellipse(-29 - flight * 7, 20 + flight * 7, 26, 14 - flight * 2, -0.25 - flight * 0.18, 0, Math.PI * 2);
     ctx.ellipse(29 + flight * 7, 20 + flight * 7, 26, 14 - flight * 2, 0.25 + flight * 0.18, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#72b94b";
+    ctx.fillStyle = colors.foot;
     ctx.beginPath();
     ctx.ellipse(-22 - flight * 5, 25 + flight * 8, 13, 8, -0.14 - flight * 0.2, 0, Math.PI * 2);
     ctx.ellipse(22 + flight * 5, 25 + flight * 8, 13, 8, 0.14 + flight * 0.2, 0, Math.PI * 2);
     ctx.fill();
 
     const bodyGradient = ctx.createLinearGradient(0, -38, 0, 32);
-    bodyGradient.addColorStop(0, "#91ce55");
-    bodyGradient.addColorStop(1, "#5bab45");
+    bodyGradient.addColorStop(0, colors.bodyTop);
+    bodyGradient.addColorStop(1, colors.bodyBottom);
     ctx.fillStyle = bodyGradient;
     ctx.beginPath();
     ctx.ellipse(0, 0, 42, 39, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#a5dc68";
+    ctx.fillStyle = colors.brow;
     ctx.beginPath();
     ctx.arc(-25, -29, 19, 0, Math.PI * 2);
     ctx.arc(25, -29, 19, 0, Math.PI * 2);
@@ -791,12 +1012,12 @@ export class FrogGame {
     ctx.arc(-23 + lookDirection * 2.6, -31, 5, 0, Math.PI * 2);
     ctx.arc(23 + lookDirection * 2.6, -31, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "rgba(248, 134, 133, 0.62)";
+    ctx.fillStyle = colors.blush;
     ctx.beginPath();
     ctx.arc(-30, 2, 8, 0, Math.PI * 2);
     ctx.arc(30, 2, 8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#28523e";
+    ctx.strokeStyle = colors.mouth;
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -952,6 +1173,12 @@ export class FrogGame {
     this.toastTimer = window.setTimeout(() => this.ui.toast.classList.remove("visible"), 1100);
   }
 
+  clearToast() {
+    window.clearTimeout(this.toastTimer);
+    this.ui.toast.classList.remove("visible");
+    this.ui.toast.textContent = "";
+  }
+
   updateUi() {
     const recordGap = this.recordToBeat - this.steps;
     if (this.steps === 0) {
@@ -964,9 +1191,23 @@ export class FrogGame {
       this.ui.stageText.textContent = `已经前进 ${this.steps} 步`;
     }
     this.ui.bestText.textContent = String(this.bestScore);
-    this.ui.fireflyText.textContent = String(this.fireflies);
+    this.ui.fireflyText.textContent = String(this.profile.fireflies);
     const milestoneProgress = this.steps === 0 ? 0 : (((this.steps - 1) % 10) + 1) * 10;
+    const milestoneCount = this.steps === 0 ? 0 : ((this.steps - 1) % 10) + 1;
     this.ui.progressFill.style.width = `${milestoneProgress}%`;
+    this.ui.milestoneText.textContent = `奖励荷叶 ${milestoneCount}/10 · +3✦`;
+    if (!this.mission) {
+      this.ui.missionText.textContent = "本局目标 · 准备出发";
+    } else if (this.mission.completed) {
+      this.ui.missionText.textContent = `目标完成 · +${this.mission.reward}✦`;
+    } else {
+      const progress = progressForMission(this.mission, {
+        steps: this.steps,
+        perfectCount: this.perfectCount,
+      });
+      this.mission.progress = progress;
+      this.ui.missionText.textContent = `${this.mission.label} ${progress}/${this.mission.target}`;
+    }
     this.ui.comboPill.hidden = this.combo < 2;
     this.ui.comboText.textContent = `×${this.combo}`;
   }
