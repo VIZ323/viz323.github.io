@@ -47,16 +47,23 @@ test("下沉荷叶按固定节奏出现，不覆盖休息荷叶", () => {
   assert.equal(platforms[30].kind, "rest");
 });
 
-test("前七十步难度平滑提高，之后按波次安排恢复段", () => {
+test("难度通过逐步展开随机范围提高，而不是锁死固定档位", () => {
   const checkpoints = [1, 5, 10, 20, 40, 70].map(difficultyForStep);
   for (let index = 1; index < checkpoints.length; index += 1) {
-    assert.ok(checkpoints[index].minDistance > checkpoints[index - 1].minDistance);
     assert.ok(checkpoints[index].maxDistance > checkpoints[index - 1].maxDistance);
     assert.ok(checkpoints[index].minRadius < checkpoints[index - 1].minRadius);
-    assert.ok(checkpoints[index].maxRadius < checkpoints[index - 1].maxRadius);
+    const previousDistanceRange = checkpoints[index - 1].maxDistance
+      - checkpoints[index - 1].minDistance;
+    const currentDistanceRange = checkpoints[index].maxDistance
+      - checkpoints[index].minDistance;
+    const previousRadiusRange = checkpoints[index - 1].maxRadius
+      - checkpoints[index - 1].minRadius;
+    const currentRadiusRange = checkpoints[index].maxRadius
+      - checkpoints[index].minRadius;
+    assert.ok(currentDistanceRange > previousDistanceRange);
+    assert.ok(currentRadiusRange > previousRadiusRange);
   }
-  assert.ok(difficultyForStep(71).minRadius < difficultyForStep(86).minRadius);
-  assert.ok(difficultyForStep(71).minDistance > difficultyForStep(86).minDistance);
+  assert.deepEqual(difficultyForStep(70), difficultyForStep(120));
 });
 
 test("普通荷叶落脚容错平滑收紧，休息荷叶始终宽容", () => {
@@ -65,10 +72,10 @@ test("普通荷叶落脚容错平滑收紧，休息荷叶始终宽容", () => {
   assert.ok(landingToleranceFactorForStep(35) > landingToleranceFactorForStep(55));
   assert.ok(landingToleranceFactorForStep(55) > landingToleranceFactorForStep(75));
   assert.equal(landingToleranceFactorForStep(80), 0.9);
-  assert.equal(landingToleranceForPlatform({ radius: 100, step: 75 }), 68);
+  assert.equal(landingToleranceForPlatform({ radius: 100, step: 75 }), 70);
 });
 
-test("开局保留短跳、长跳和缓冲节奏，之后逐渐增加随机性", () => {
+test("十跳节奏只提供轻微倾向，不再形成重复的固定距离顺序", () => {
   assert.equal(rhythmForStep(1).name, "起步");
   assert.equal(rhythmForStep(3).name, "伸展");
   assert.equal(rhythmForStep(4).name, "缓一缓");
@@ -82,9 +89,6 @@ test("开局保留短跳、长跳和缓冲节奏，之后逐渐增加随机性",
     const previous = platforms[step - 1];
     return Math.hypot(current.x - previous.x, current.y - previous.y);
   };
-  assert.ok(distance(3) > distance(1));
-  assert.ok(distance(9) > distance(6));
-
   const rankPattern = (start) => Array.from({ length: 9 }, (_, index) => index + 1)
     .sort((left, right) => distance(start + left) - distance(start + right));
   assert.notDeepEqual(rankPattern(10), rankPattern(30));
@@ -116,4 +120,26 @@ test("前期平均间距更近，后期平均间距和变化幅度都会增加",
   assert.ok(middle.mean < late.mean);
   assert.ok(early.deviation < middle.deviation);
   assert.ok(middle.deviation < late.deviation);
+});
+
+test("后期仍会随机出现近跳和大荷叶，同时也能生成极限远跳与小荷叶", () => {
+  const samples = Array.from({ length: 80 }, (_, seed) => generatePlatforms(71, seed + 100));
+  const distances = [];
+  const radii = [];
+  const verticalAdvances = [];
+  for (const platforms of samples) {
+    for (let step = 51; step <= 69; step += 1) {
+      const current = platforms[step];
+      const previous = platforms[step - 1];
+      distances.push(Math.hypot(current.x - previous.x, current.y - previous.y));
+      radii.push(current.radius);
+      verticalAdvances.push(current.y - previous.y);
+    }
+  }
+
+  assert.ok(Math.min(...distances) < 220);
+  assert.ok(Math.max(...distances) > 390);
+  assert.ok(Math.min(...radii) <= 54);
+  assert.ok(Math.max(...radii) >= 88);
+  assert.ok(Math.max(...verticalAdvances) - Math.min(...verticalAdvances) > 220);
 });
