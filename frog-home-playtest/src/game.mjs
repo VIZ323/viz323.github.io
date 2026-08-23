@@ -9,6 +9,7 @@ import {
   pointOnJump,
 } from "./physics.mjs";
 import { TinyAudio } from "./audio.mjs";
+import { formatCount, onLocaleChange, t } from "./i18n.mjs";
 import { cameraFollowSpeedForState, cameraTargetForWorldY } from "./camera.mjs";
 import { track } from "./analytics.mjs";
 import {
@@ -48,7 +49,7 @@ const FROG_COLORS = Object.freeze({
 
 const SCENES = Object.freeze([
   {
-    name: "晨雾荷塘",
+    nameKey: "scene.morning",
     top: "#dff4da",
     middle: "#c4e9d9",
     bottom: "#80c9bd",
@@ -56,7 +57,7 @@ const SCENES = Object.freeze([
     plant: "#5c9870",
   },
   {
-    name: "晴光水湾",
+    nameKey: "scene.sunny",
     top: "#d8f1dd",
     middle: "#aee0d2",
     bottom: "#65bcb5",
@@ -64,7 +65,7 @@ const SCENES = Object.freeze([
     plant: "#4c916c",
   },
   {
-    name: "晚霞芦荡",
+    nameKey: "scene.sunset",
     top: "#fae3bd",
     middle: "#d6dcb9",
     bottom: "#79b8ad",
@@ -72,7 +73,7 @@ const SCENES = Object.freeze([
     plant: "#638f67",
   },
   {
-    name: "月光荷塘",
+    nameKey: "scene.moon",
     top: "#a9c8c7",
     middle: "#82b6b3",
     bottom: "#4f9694",
@@ -86,10 +87,10 @@ function sceneForSteps(steps) {
 }
 
 const DIFFICULTY_NOTICES = Object.freeze({
-  10: "热身结束 · 后面的荷叶会更远",
-  20: "提示结束 · 接下来要靠手感啦",
-  40: "进入深水区 · 落脚位置更小",
-  70: "高手水域 · 每一跳都要踩稳",
+  10: "difficulty.10",
+  20: "difficulty.20",
+  40: "difficulty.40",
+  70: "difficulty.70",
 });
 
 function powerGuideOpacityForStep(step) {
@@ -145,6 +146,10 @@ export class FrogGame {
     this.bindInput();
     this.updateCollectionUi();
     this.updateUi();
+    this.unsubscribeLocale = onLocaleChange(() => {
+      this.updateCollectionUi();
+      this.updateUi();
+    });
     window.addEventListener("resize", () => this.resizeCanvas());
     requestAnimationFrame((time) => this.loop(time));
   }
@@ -395,7 +400,7 @@ export class FrogGame {
       if (rescuePlatform) rescuePlatform.radius = Math.max(rescuePlatform.radius, 84 - offset * 3);
     }
     this.ui.failOverlay.classList.remove("visible");
-    this.showToast("蜻蜓把你送回来了");
+    this.showToast(t("toast.revived"));
     this.spawnSparkles(platform.x, platform.y + 48, "#f7cc4d", 12);
     this.updateUi();
     track("revive_complete", { steps: this.steps });
@@ -600,38 +605,39 @@ export class FrogGame {
       this.prunePlatforms();
       this.ensurePlatforms();
       this.updateUi();
-      const difficultyNotice = DIFFICULTY_NOTICES[this.steps];
+      const difficultyNoticeKey = DIFFICULTY_NOTICES[this.steps];
+      const difficultyNotice = difficultyNoticeKey ? t(difficultyNoticeKey) : null;
       const rewardTotal = missionReward + milestoneReward;
       if (target.kind === "sinking") {
-        this.showToast("下沉荷叶 · 2.3秒内完成下一跳！");
+        this.showToast(t("toast.sinkingDeadline"));
         track("sinking_leaf_landed", {
           step: this.steps,
           delayMs: SPECIALS.sinkingDelayMs,
           totalMs: SPECIALS.sinkingTotalMs,
         });
       } else if (precisionState.activated) {
-        this.showToast(`萤火连跳 · 接下来 ${SPECIALS.feverJumps} 跳更稳！`);
+        this.showToast(t("toast.feverStart", { count: SPECIALS.feverJumps }));
       } else if (activeJump.fever && this.feverJumps > 0) {
-        this.showToast(`萤火连跳 · 还剩 ${this.feverJumps} 跳`);
+        this.showToast(t("toast.feverRemaining", { count: this.feverJumps }));
       } else if (activeJump.fever) {
-        this.showToast("萤火连跳结束 · 继续踩稳吧");
+        this.showToast(t("toast.feverEnd"));
       } else if (rewardTotal > 0) {
         const prefix = milestoneReward > 0 && difficultyNotice
           ? difficultyNotice.split(" · ")[0]
           : missionReward > 0 && milestoneReward > 0
-            ? "目标与阶段完成"
+            ? t("toast.rewardBoth")
             : missionReward > 0
-              ? "本局目标完成"
-              : "抵达奖励荷叶";
-        this.showToast(`${prefix} · 萤火虫 +${rewardTotal}`);
+              ? t("toast.rewardGoal")
+              : t("toast.rewardMilestone");
+        this.showToast(t("toast.reward", { reason: prefix, count: rewardTotal }));
       } else if (newRecord) {
-        this.showToast(`新纪录 · ${this.steps} 步！`);
+        this.showToast(t("toast.record", { count: this.steps }));
       } else if (difficultyNotice) {
         this.showToast(difficultyNotice);
       } else if (this.steps > 0 && this.steps % 15 === 0) {
-        this.showToast(`前方 · ${sceneForSteps(this.steps).name}`);
+        this.showToast(t("toast.ahead", { scene: t(sceneForSteps(this.steps).nameKey) }));
       } else if (this.steps > 0 && this.steps % 10 === 0) {
-        this.showToast(`${this.steps} 步 · 在大荷叶上歇一歇`);
+        this.showToast(t("toast.rest", { count: this.steps }));
       }
       this.state = "idle";
       this.maybeShowSinkingTutorial();
@@ -656,8 +662,8 @@ export class FrogGame {
     this.frog.y = platform.y - 12;
     const feedback = {
       kind: "sinking",
-      title: "荷叶完全沉没了",
-      message: "下沉荷叶只能停留2.3秒，要更早完成蓄力并跳走。",
+      title: t("fail.sinkingTitle"),
+      message: t("fail.sinkingMessage"),
     };
     track("jump_result", {
       outcome: "sinking_timeout",
@@ -705,12 +711,17 @@ export class FrogGame {
     this.saveProfile();
     this.ui.sinkingTutorial.classList.remove("visible");
     this.state = "idle";
-    this.showToast("枯黄裂纹荷叶会下沉 · 落稳后尽快跳走");
+    this.showToast(t("toast.sinkingHint"));
     track("sinking_tutorial_dismissed", { nextStep: this.targetPlatform()?.step });
   }
 
   haptic(pattern) {
     try {
+      const nativeHaptic = window.webkit?.messageHandlers?.haptic;
+      if (nativeHaptic?.postMessage) {
+        nativeHaptic.postMessage(pattern);
+        return;
+      }
       window.navigator?.vibrate?.(pattern);
     } catch {
       // 浏览器或小游戏运行环境不支持震动时直接忽略。
@@ -718,9 +729,9 @@ export class FrogGame {
   }
 
   updateFailUi() {
-    this.ui.failSteps.textContent = `${this.steps} 步`;
-    this.ui.failBest.textContent = `${this.bestScore} 步`;
-    this.ui.failPerfect.textContent = `${this.perfectCount} 次`;
+    this.ui.failSteps.textContent = formatCount("step", this.steps);
+    this.ui.failBest.textContent = formatCount("step", this.bestScore);
+    this.ui.failPerfect.textContent = formatCount("time", this.perfectCount);
     this.ui.failFireflies.textContent = `+${this.runFireflies} ✦`;
     const canRevive = !this.reviveUsed && this.steps >= 3;
     this.ui.reviveButton.hidden = !canRevive;
@@ -728,15 +739,15 @@ export class FrogGame {
     this.ui.restartButton.className = canRevive
       ? "text-button"
       : "primary-button restart-primary";
-    this.ui.restartButton.textContent = canRevive ? "重新挑战" : "立即重来";
-    this.ui.failTitle.textContent = this.lastMissFeedback?.title ?? "这次走到了这里";
+    this.ui.restartButton.textContent = canRevive ? t("fail.retry") : t("fail.retryNow");
+    this.ui.failTitle.textContent = this.lastMissFeedback?.title ?? t("fail.fallbackTitle");
     this.ui.failText.textContent = this.lastMissFeedback?.message
-      ?? "休息一下，再向更远的荷塘出发吧。";
+      ?? t("fail.fallbackMessage");
     this.ui.rescueNote.textContent = canRevive
-      ? "观看一次激励广告，回到上一片荷叶"
+      ? t("fail.rescueAvailable")
       : this.reviveUsed
-        ? "本局的蜻蜓救援已经使用过啦"
-        : "先熟悉手感，立即重来会更快";
+        ? t("fail.rescueUsed")
+        : t("fail.rescueLow");
     if (canRevive) track("revive_offer_shown", { steps: this.steps });
   }
 
@@ -1048,7 +1059,7 @@ export class FrogGame {
       this.drawSpecialBadge(
         screen.x + radius * 0.45,
         screen.y - 42,
-        "↓ 下沉",
+        t("badge.sinking"),
         "#80642f",
       );
     }
@@ -1433,34 +1444,38 @@ export class FrogGame {
   updateUi() {
     const recordGap = this.recordToBeat - this.steps;
     if (this.steps === 0) {
-      this.ui.stageText.textContent = "准备出发";
+      this.ui.stageText.textContent = t("stage.ready");
     } else if (this.recordToBeat >= 5 && recordGap > 0 && recordGap <= 3) {
-      this.ui.stageText.textContent = `再跳 ${recordGap} 步追平最佳`;
+      this.ui.stageText.textContent = t("stage.tieBest", { count: recordGap });
     } else if (this.recordToBeat >= 5 && recordGap === 0) {
-      this.ui.stageText.textContent = "下一跳就是新纪录";
+      this.ui.stageText.textContent = t("stage.nextRecord");
     } else {
-      this.ui.stageText.textContent = `已经前进 ${this.steps} 步`;
+      this.ui.stageText.textContent = t("stage.progress", { count: this.steps });
     }
     this.ui.bestText.textContent = String(this.bestScore);
     this.ui.fireflyText.textContent = String(this.profile.fireflies);
     const milestoneProgress = this.steps === 0 ? 0 : (((this.steps - 1) % 10) + 1) * 10;
     const milestoneCount = this.steps === 0 ? 0 : ((this.steps - 1) % 10) + 1;
     this.ui.progressFill.style.width = `${milestoneProgress}%`;
-    this.ui.milestoneText.textContent = `奖励荷叶 ${milestoneCount}/10 · +3✦`;
+    this.ui.milestoneText.textContent = t("milestone.progress", { count: milestoneCount });
     if (!this.mission) {
-      this.ui.missionText.textContent = "本局目标 · 准备出发";
+      this.ui.missionText.textContent = t("mission.ready");
     } else if (this.mission.completed) {
-      this.ui.missionText.textContent = `目标完成 · +${this.mission.reward}✦`;
+      this.ui.missionText.textContent = t("mission.complete", { count: this.mission.reward });
     } else {
       const progress = progressForMission(this.mission, {
         steps: this.steps,
         perfectCount: this.perfectCount,
       });
       this.mission.progress = progress;
-      this.ui.missionText.textContent = `${this.mission.label} ${progress}/${this.mission.target}`;
+      this.ui.missionText.textContent = t("mission.status", {
+        label: t(this.mission.labelKey),
+        progress,
+        target: this.mission.target,
+      });
     }
     this.ui.feverPill.hidden = this.feverJumps <= 0;
-    this.ui.feverText.textContent = `${this.feverJumps}跳`;
+    this.ui.feverText.textContent = formatCount("jump", this.feverJumps);
     this.ui.comboPill.hidden = this.feverJumps > 0 || this.combo < 2;
     this.ui.comboText.textContent = `×${this.combo}`;
   }

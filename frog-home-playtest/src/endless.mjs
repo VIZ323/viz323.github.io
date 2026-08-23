@@ -26,17 +26,14 @@ export function createSeededRandom(seed = Date.now()) {
 
 export function difficultyForStep(step) {
   const normalizedStep = Math.max(1, Math.floor(step));
-  if (normalizedStep <= 10) {
-    return { minDistance: 195, maxDistance: 280, minRadius: 80, maxRadius: 92 };
-  }
-  if (normalizedStep <= 20) {
-    return { minDistance: 225, maxDistance: 320, minRadius: 72, maxRadius: 86 };
-  }
-  if (normalizedStep <= 40) {
-    return { minDistance: 255, maxDistance: 355, minRadius: 64, maxRadius: 80 };
-  }
   if (normalizedStep <= 70) {
-    return { minDistance: 280, maxDistance: 385, minRadius: 58, maxRadius: 74 };
+    const progress = Math.pow((normalizedStep - 1) / 69, 0.82);
+    return {
+      minDistance: Math.round(178 + 122 * progress),
+      maxDistance: Math.round(250 + 165 * progress),
+      minRadius: Math.round(86 - 34 * progress),
+      maxRadius: Math.round(98 - 30 * progress),
+    };
   }
   const wave = (normalizedStep - 71) % 20;
   const recovery = wave >= 15;
@@ -48,10 +45,10 @@ export function difficultyForStep(step) {
 export function landingToleranceFactorForStep(step) {
   const normalizedStep = Math.max(1, Math.floor(step));
   if (normalizedStep % ENDLESS.restInterval === 0) return 0.9;
-  if (normalizedStep <= 10) return 0.86;
-  if (normalizedStep <= 20) return 0.82;
-  if (normalizedStep <= 40) return 0.77;
-  if (normalizedStep <= 70) return 0.72;
+  if (normalizedStep <= 70) {
+    const progress = Math.pow((normalizedStep - 1) / 69, 0.82);
+    return 0.9 - 0.22 * progress;
+  }
   return 0.68;
 }
 
@@ -85,6 +82,11 @@ function between(random, min, max) {
   return min + (max - min) * random();
 }
 
+function randomBlendForStep(step) {
+  const progress = Math.min(1, Math.max(0, (step - 1) / 69));
+  return 0.25 + 0.55 * Math.pow(progress, 0.75);
+}
+
 export class EndlessGenerator {
   constructor(seed = Date.now()) {
     this.random = createSeededRandom(seed);
@@ -98,13 +100,13 @@ export class EndlessGenerator {
       ? between(this.random, 90, 96)
       : between(this.random, difficulty.minRadius, difficulty.maxRadius) + rhythm.radiusOffset;
     const distanceRange = difficulty.maxDistance - difficulty.minDistance;
+    const rhythmBias = between(this.random, rhythm.minBias, rhythm.maxBias);
+    const freeBias = this.random();
+    const randomBlend = randomBlendForStep(step);
+    const distanceBias = rhythmBias * (1 - randomBlend) + freeBias * randomBlend;
     const distance = isRest
       ? between(this.random, Math.max(195, difficulty.minDistance - 35), Math.min(295, difficulty.maxDistance))
-      : between(
-        this.random,
-        difficulty.minDistance + distanceRange * rhythm.minBias,
-        difficulty.minDistance + distanceRange * rhythm.maxBias,
-      );
+      : difficulty.minDistance + distanceRange * distanceBias;
     const minX = radius + ENDLESS.edgePadding;
     const maxX = ENDLESS.width - radius - ENDLESS.edgePadding;
     const horizontal = between(this.random, distance * 0.34, distance * 0.72);
