@@ -43,6 +43,14 @@ export function missionForCursor(cursor) {
   return MISSIONS[normalizedCursor % MISSIONS.length];
 }
 
+export function recordChallengeForBest(bestScore) {
+  const best = Number.isFinite(bestScore) ? Math.max(0, Math.floor(bestScore)) : 0;
+  if (best === 0) {
+    return "还没有历史纪录 · 本局先到 5 步，留下你的第一项纪录！";
+  }
+  return `历史最佳 ${best} 步 · 本局冲击 ${best + 1} 步，超越昨天的自己！`;
+}
+
 export function progressForMission(mission, stats) {
   if (!mission) return 0;
   const value = mission.type === "perfect" ? stats.perfectCount : stats.steps;
