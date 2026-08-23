@@ -24,6 +24,8 @@ npm test
 
 Cocos 旧版构建方式见 [`cocos-project/README.md`](./cocos-project/README.md)。
 
+iOS App Store 离线封装工程见 [`ios/FrogHome/README.md`](./ios/FrogHome/README.md)。
+
 ## 当前原型包含
 
 - 单指按住/松开操作

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#dff3d6" />
+    <title>小蛙回家路 · 无尽荷塘</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="game-shell" aria-label="小蛙回家路游戏原型">
+        <canvas id="game" width="750" height="1334" aria-label="游戏画面"></canvas>
+
+        <header class="hud" aria-live="polite">
+          <div class="chapter">
+            <span class="eyebrow">无尽荷塘 · 最佳 <span id="bestText">0</span> 步</span>
+            <strong id="stageText">准备出发</strong>
+          </div>
+          <div class="hud-pills">
+            <div id="feverPill" class="fever-pill" aria-label="萤火连跳剩余次数" hidden>
+              <span>萤火连跳</span><strong id="feverText">3跳</strong>
+            </div>
+            <div id="comboPill" class="combo-pill" aria-label="精准落地连击" hidden>
+              <span>稳</span><strong id="comboText">×2</strong>
+            </div>
+            <div class="firefly-pill" aria-label="萤火虫数量">
+              <span class="firefly-icon">✦</span>
+              <strong id="fireflyText">0</strong>
+            </div>
+          </div>
+        </header>
+
+        <div class="progress-track" aria-hidden="true">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+
+        <div class="goal-row" aria-live="polite">
+          <span id="missionText">本局目标 · 准备出发</span>
+          <span id="milestoneText">奖励荷叶 0/10</span>
+        </div>
+
+        <div id="hint" class="hint">
+          <span class="finger">☝</span>
+          <div><strong>按住屏幕蓄力</strong><small>松开就会跳出去</small></div>
+        </div>
+
+        <div id="powerWrap" class="power-wrap" aria-hidden="true">
+          <span>轻轻</span>
+          <div class="power-track">
+            <div id="powerTarget" class="power-target"></div>
+            <div id="powerFill" class="power-fill"></div>
+          </div>
+          <span>远远</span>
+        </div>
+
+        <div id="toast" class="toast" aria-live="polite"></div>
+
+        <div id="sinkingTutorial" class="overlay mechanic-overlay" role="dialog" aria-modal="true" aria-labelledby="sinkingTutorialTitle">
+          <div class="mechanic-card">
+            <span class="mechanic-kicker">首次遇见 · 游戏已暂停</span>
+            <div class="sinking-demo" aria-hidden="true">
+              <span class="demo-water"></span>
+              <span class="demo-leaf"><i>↓↓</i></span>
+              <span class="demo-frog">●</span>
+              <span class="demo-bubble bubble-a"></span>
+              <span class="demo-bubble bubble-b"></span>
+            </div>
+            <h2 id="sinkingTutorialTitle">这是下沉荷叶</h2>
+            <p>枯黄色、布满裂纹，带有“↓ 下沉”标记。<br />落地 <strong>0.5秒</strong> 后开始下沉，<strong>2.3秒</strong> 完全沉没。</p>
+            <div class="mechanic-rule"><span>落稳</span><b>→</b><span>尽快蓄力</span><b>→</b><span>跳走</span></div>
+            <button id="sinkingTutorialButton" class="primary-button" type="button">知道了，继续</button>
+          </div>
+        </div>
+
+        <div id="startOverlay" class="overlay visible">
+          <div class="story-card">
+            <div class="mini-scene" aria-hidden="true">
+              <span class="reed reed-a"></span>
+              <span class="reed reed-b"></span>
+              <span class="mini-lily"></span>
+              <span class="mini-frog">●</span>
+            </div>
+            <span class="story-kicker">无限模式 · 一个手指就能玩</span>
+            <h1>小蛙回家路</h1>
+            <p>荷塘的路还在向前延伸。<br />踩着荷叶，看看小蛙今天能走多远吧。</p>
+            <div class="mission-preview">
+              <span id="missionPreview">还没有历史纪录 · 本局先到 5 步，留下你的第一项纪录！</span>
+              <strong>累计 <b id="startFireflyText">0</b> ✦</strong>
+            </div>
+            <button id="startButton" class="primary-button" type="button">开始挑战</button>
+            <small>操作：按住蓄力，松开跳跃</small>
+          </div>
+        </div>
+
+        <div id="failOverlay" class="overlay">
+          <div class="result-card fail-card">
+            <span class="result-emoji">💦</span>
+            <h2 id="failTitle">哎呀，掉进水里了</h2>
+            <p id="failText">蜻蜓可以把小蛙送回上一片荷叶。</p>
+            <div class="result-stats">
+              <div class="score-line"><span>本次前进</span><strong id="failSteps">0 步</strong></div>
+              <div class="score-line"><span>历史最佳</span><strong id="failBest">0 步</strong></div>
+              <div class="score-line"><span>精准落地</span><strong id="failPerfect">0 次</strong></div>
+              <div class="score-line"><span>本局收集</span><strong id="failFireflies">+0 ✦</strong></div>
+            </div>
+            <button id="reviveButton" class="primary-button ad-button" type="button">
+              <span>▶</span> 蜻蜓救援
+            </button>
+            <button id="restartButton" class="text-button" type="button">重新挑战</button>
+            <button id="homeButton" class="text-button home-button" type="button">返回首页</button>
+            <small id="rescueNote">每局可以使用一次蜻蜓救援</small>
+          </div>
+        </div>
+      </section>
+
+      <aside class="prototype-note">
+        <span>无尽模式原型</span>
+        <p>手机上按住画面蓄力，松开跳跃；电脑上使用鼠标。</p>
+      </aside>
+    </main>
+    <script type="module" src="./src/main.mjs"></script>
+  </body>
+</html>
