@@ -17,8 +17,6 @@ const ui = {
   startOverlay: document.querySelector("#startOverlay"),
   missionPreview: document.querySelector("#missionPreview"),
   startFireflyText: document.querySelector("#startFireflyText"),
-  skinButtons: [...document.querySelectorAll("[data-skin-id]")],
-  gameShell: document.querySelector(".game-shell"),
   failOverlay: document.querySelector("#failOverlay"),
   failTitle: document.querySelector("#failTitle"),
   failText: document.querySelector("#failText"),
@@ -38,6 +36,3 @@ document.querySelector("#startButton").addEventListener("click", () => game.star
 document.querySelector("#reviveButton").addEventListener("click", () => game.revive());
 document.querySelector("#restartButton").addEventListener("click", () => game.restart());
 document.querySelector("#homeButton").addEventListener("click", () => game.goHome());
-for (const button of ui.skinButtons) {
-  button.addEventListener("click", () => game.chooseSkin(button.dataset.skinId));
-}

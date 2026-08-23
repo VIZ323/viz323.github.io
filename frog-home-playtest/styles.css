@@ -463,6 +463,10 @@ button {
 .mission-preview {
   margin: -7px 0 13px;
   padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
   color: #477a5d;
   font-size: 11px;
   font-weight: 800;
@@ -470,107 +474,15 @@ button {
   background: #eef4dc;
 }
 
-.collection-head {
-  margin: 0 2px 7px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #587568;
-  font-size: 10px;
-}
-
-.collection-head strong {
-  color: var(--ink);
-  font-size: 11px;
-}
-
-.collection-head b {
-  color: #d28c25;
-}
-
-.skin-shop {
-  margin-bottom: 15px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
-}
-
-.skin-option {
-  min-width: 0;
-  padding: 7px 4px 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  color: #4e6d61;
-  border: 1px solid rgba(72, 119, 88, 0.15);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.66);
-  cursor: pointer;
-  transition: transform 100ms ease, border-color 120ms ease, background 120ms ease;
-}
-
-.skin-option:active {
-  transform: translateY(2px);
-}
-
-.skin-option:focus-visible {
-  outline: 2px solid rgba(65, 132, 69, 0.62);
-  outline-offset: 1px;
-}
-
-.skin-option.selected {
-  border-color: rgba(67, 143, 67, 0.58);
-  background: #e7f3d8;
-  box-shadow: inset 0 0 0 1px rgba(91, 157, 72, 0.15);
-}
-
-.skin-option.locked {
-  background: rgba(244, 243, 229, 0.72);
-}
-
-.skin-option strong {
-  overflow: hidden;
-  max-width: 100%;
+.mission-preview strong {
+  flex: 0 0 auto;
+  color: #7b8c5c;
   font-size: 10px;
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
-.skin-option small {
-  color: #9a8661;
-  font-size: 8px;
-  font-weight: 800;
-}
-
-.skin-option.selected small {
-  color: #438746;
-}
-
-.skin-swatch {
-  position: relative;
-  width: 39px;
-  height: 29px;
-  border-radius: 47% 47% 43% 43%;
-  background:
-    radial-gradient(circle at 31% 27%, #173a31 0 2px, #fffbe9 2.5px 6px, transparent 6.5px),
-    radial-gradient(circle at 69% 27%, #173a31 0 2px, #fffbe9 2.5px 6px, transparent 6.5px),
-    linear-gradient(var(--skin-top), var(--skin-bottom));
-  box-shadow: -10px -8px 0 -6px var(--skin-top), 10px -8px 0 -6px var(--skin-top);
-}
-
-.skin-leaf { --skin-top: #91ce55; --skin-bottom: #5bab45; }
-.skin-berry { --skin-top: #f2abb8; --skin-bottom: #d66f8b; }
-.skin-moon { --skin-top: #9bd6d2; --skin-bottom: #4fa0a8; }
-
-.game-shell[data-skin="berry"] .mini-frog {
-  background: #d66f8b;
-  box-shadow: -13px -11px 0 -7px #f2abb8, 13px -11px 0 -7px #f2abb8;
-}
-
-.game-shell[data-skin="moon"] .mini-frog {
-  background: #4fa0a8;
-  box-shadow: -13px -11px 0 -7px #9bd6d2, 13px -11px 0 -7px #9bd6d2;
+.mission-preview b {
+  color: #d28c25;
 }
 
 .story-card > small,

@@ -7,20 +7,27 @@ import {
   missionForCursor,
   normalizeProfile,
   progressForMission,
-  skinById,
 } from "../src/progression.mjs";
 
-test("旧存档和异常存档会被修复成可用档案", () => {
+test("移除皮肤后，旧存档会退回已解锁皮肤消耗的萤火虫", () => {
   const profile = normalizeProfile({
+    version: 1,
     fireflies: 12.8,
     unlockedSkins: ["berry", "unknown", "berry"],
     selectedSkin: "unknown",
     missionCursor: -3,
   });
-  assert.deepEqual(profile.unlockedSkins, ["leaf", "berry"]);
-  assert.equal(profile.fireflies, 12);
-  assert.equal(profile.selectedSkin, "leaf");
-  assert.equal(profile.missionCursor, 0);
+  assert.deepEqual(profile, { version: 2, fireflies: 20, missionCursor: 0 });
+});
+
+test("新版存档不会重复获得已下线皮肤退款", () => {
+  const profile = normalizeProfile({
+    version: 2,
+    fireflies: 20,
+    unlockedSkins: ["berry", "moon"],
+    missionCursor: 3,
+  });
+  assert.deepEqual(profile, { version: 2, fireflies: 20, missionCursor: 3 });
 });
 
 test("三种局内目标会循环出现并正确计算进度", () => {
@@ -39,8 +46,4 @@ test("每十步发放阶段奖励，普通步数不发放", () => {
 test("落水反馈能区分力度偏小和偏大", () => {
   assert.equal(feedbackForMiss(180, 240).kind, "short");
   assert.equal(feedbackForMiss(310, 240).kind, "long");
-});
-
-test("找不到皮肤时安全回退到默认青蛙", () => {
-  assert.equal(skinById("missing").id, "leaf");
 });
