@@ -99,7 +99,8 @@ button {
   align-items: center;
 }
 
-.combo-pill {
+.combo-pill,
+.fever-pill {
   min-width: 59px;
   padding: 8px 11px;
   display: flex;
@@ -114,9 +115,23 @@ button {
   backdrop-filter: blur(8px);
 }
 
-.combo-pill span {
+.combo-pill span,
+.fever-pill span {
   font-size: 11px;
   font-weight: 900;
+}
+
+.fever-pill {
+  min-width: 90px;
+  color: #6e6122;
+  border-color: rgba(255, 252, 204, 0.88);
+  background: rgba(255, 239, 129, 0.9);
+  box-shadow: 0 0 18px rgba(255, 221, 77, 0.45), 0 8px 18px rgba(35, 100, 77, 0.12);
+}
+
+.fever-pill strong {
+  color: #b96824;
+  font-size: 11px;
 }
 
 .firefly-pill {
