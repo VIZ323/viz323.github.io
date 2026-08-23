@@ -29,6 +29,7 @@ Features:
 - Precision landing streaks and firefly rewards
 - Sinking lily pads and rotating run goals
 - A locally saved personal best
+- Simplified Chinese, Traditional Chinese, English, Japanese, and Korean
 - Fully offline play with no account required
 
 Take it one lily pad at a time and see how far you can go.

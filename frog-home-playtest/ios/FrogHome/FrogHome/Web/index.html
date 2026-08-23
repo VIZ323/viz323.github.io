@@ -9,22 +9,22 @@
   </head>
   <body>
     <main class="page">
-      <section class="game-shell" aria-label="小蛙回家路游戏原型">
-        <canvas id="game" width="750" height="1334" aria-label="游戏画面"></canvas>
+      <section class="game-shell" aria-label="小蛙回家路游戏" data-i18n-aria="aria.gameShell">
+        <canvas id="game" width="750" height="1334" aria-label="游戏画面" data-i18n-aria="aria.canvas"></canvas>
 
         <header class="hud" aria-live="polite">
           <div class="chapter">
-            <span class="eyebrow">无尽荷塘 · 最佳 <span id="bestText">0</span> 步</span>
-            <strong id="stageText">准备出发</strong>
+            <span class="eyebrow"><span data-i18n="hud.endless">无尽荷塘</span> · <span data-i18n="hud.best">最佳</span> <span id="bestText">0</span> <span data-i18n="hud.stepUnit">步</span></span>
+            <strong id="stageText" data-i18n="stage.ready">准备出发</strong>
           </div>
           <div class="hud-pills">
-            <div id="feverPill" class="fever-pill" aria-label="萤火连跳剩余次数" hidden>
-              <span>萤火连跳</span><strong id="feverText">3跳</strong>
+            <div id="feverPill" class="fever-pill" aria-label="萤火连跳剩余次数" data-i18n-aria="aria.fever" hidden>
+              <span data-i18n="hud.fever">萤火连跳</span><strong id="feverText">3跳</strong>
             </div>
-            <div id="comboPill" class="combo-pill" aria-label="精准落地连击" hidden>
-              <span>稳</span><strong id="comboText">×2</strong>
+            <div id="comboPill" class="combo-pill" aria-label="精准落地连击" data-i18n-aria="aria.combo" hidden>
+              <span data-i18n="hud.steady">稳</span><strong id="comboText">×2</strong>
             </div>
-            <div class="firefly-pill" aria-label="萤火虫数量">
+            <div class="firefly-pill" aria-label="萤火虫数量" data-i18n-aria="aria.fireflies">
               <span class="firefly-icon">✦</span>
               <strong id="fireflyText">0</strong>
             </div>
@@ -36,29 +36,29 @@
         </div>
 
         <div class="goal-row" aria-live="polite">
-          <span id="missionText">本局目标 · 准备出发</span>
-          <span id="milestoneText">奖励荷叶 0/10</span>
+          <span id="missionText" data-i18n="goal.ready">本局目标 · 准备出发</span>
+          <span id="milestoneText" data-i18n="milestone.initial">奖励荷叶 0/10</span>
         </div>
 
         <div id="hint" class="hint">
           <span class="finger">☝</span>
-          <div><strong>按住屏幕蓄力</strong><small>松开就会跳出去</small></div>
+          <div><strong data-i18n="hint.hold">按住屏幕蓄力</strong><small data-i18n="hint.release">松开就会跳出去</small></div>
         </div>
 
         <div id="powerWrap" class="power-wrap" aria-hidden="true">
-          <span>轻轻</span>
+          <span data-i18n="power.light">轻轻</span>
           <div class="power-track">
             <div id="powerTarget" class="power-target"></div>
             <div id="powerFill" class="power-fill"></div>
           </div>
-          <span>远远</span>
+          <span data-i18n="power.far">远远</span>
         </div>
 
         <div id="toast" class="toast" aria-live="polite"></div>
 
         <div id="sinkingTutorial" class="overlay mechanic-overlay" role="dialog" aria-modal="true" aria-labelledby="sinkingTutorialTitle">
           <div class="mechanic-card">
-            <span class="mechanic-kicker">首次遇见 · 游戏已暂停</span>
+            <span class="mechanic-kicker" data-i18n="tutorial.kicker">首次遇见 · 游戏已暂停</span>
             <div class="sinking-demo" aria-hidden="true">
               <span class="demo-water"></span>
               <span class="demo-leaf"><i>↓↓</i></span>
@@ -66,57 +66,67 @@
               <span class="demo-bubble bubble-a"></span>
               <span class="demo-bubble bubble-b"></span>
             </div>
-            <h2 id="sinkingTutorialTitle">这是下沉荷叶</h2>
-            <p>枯黄色、布满裂纹，带有“↓ 下沉”标记。<br />落地 <strong>0.5秒</strong> 后开始下沉，<strong>2.3秒</strong> 完全沉没。</p>
-            <div class="mechanic-rule"><span>落稳</span><b>→</b><span>尽快蓄力</span><b>→</b><span>跳走</span></div>
-            <button id="sinkingTutorialButton" class="primary-button" type="button">知道了，继续</button>
+            <h2 id="sinkingTutorialTitle" data-i18n="tutorial.title">这是下沉荷叶</h2>
+            <p data-i18n-html="tutorial.descriptionHtml">枯黄色、布满裂纹，带有“↓ 下沉”标记。<br />落地 <strong>0.5秒</strong> 后开始下沉，<strong>2.3秒</strong> 完全沉没。</p>
+            <div class="mechanic-rule"><span data-i18n="tutorial.land">落稳</span><b>→</b><span data-i18n="tutorial.charge">尽快蓄力</span><b>→</b><span data-i18n="tutorial.jumpAway">跳走</span></div>
+            <button id="sinkingTutorialButton" class="primary-button" type="button" data-i18n="tutorial.continue">知道了，继续</button>
           </div>
         </div>
 
         <div id="startOverlay" class="overlay visible">
           <div class="story-card">
+            <label class="language-picker">
+              <span aria-hidden="true">🌐</span>
+              <select id="languageSelect" aria-label="选择语言" data-i18n-aria="aria.language">
+                <option value="zh-Hans">简体中文</option>
+                <option value="zh-Hant">繁體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+              </select>
+            </label>
             <div class="mini-scene" aria-hidden="true">
               <span class="reed reed-a"></span>
               <span class="reed reed-b"></span>
               <span class="mini-lily"></span>
               <span class="mini-frog">●</span>
             </div>
-            <span class="story-kicker">无限模式 · 一个手指就能玩</span>
-            <h1>小蛙回家路</h1>
-            <p>荷塘的路还在向前延伸。<br />踩着荷叶，看看小蛙今天能走多远吧。</p>
+            <span class="story-kicker" data-i18n="home.kicker">无限模式 · 一个手指就能玩</span>
+            <h1 data-i18n="home.title">小蛙回家路</h1>
+            <p data-i18n-html="home.storyHtml">荷塘的路还在向前延伸。<br />踩着荷叶，看看小蛙今天能走多远吧。</p>
             <div class="mission-preview">
               <span id="missionPreview">还没有历史纪录 · 本局先到 5 步，留下你的第一项纪录！</span>
-              <strong>累计 <b id="startFireflyText">0</b> ✦</strong>
+              <strong><span data-i18n="home.total">累计</span> <b id="startFireflyText">0</b> ✦</strong>
             </div>
-            <button id="startButton" class="primary-button" type="button">开始挑战</button>
-            <small>操作：按住蓄力，松开跳跃</small>
+            <button id="startButton" class="primary-button" type="button" data-i18n="home.start">开始挑战</button>
+            <small data-i18n="home.controls">操作：按住蓄力，松开跳跃</small>
           </div>
         </div>
 
         <div id="failOverlay" class="overlay">
           <div class="result-card fail-card">
             <span class="result-emoji">💦</span>
-            <h2 id="failTitle">哎呀，掉进水里了</h2>
-            <p id="failText">蜻蜓可以把小蛙送回上一片荷叶。</p>
+            <h2 id="failTitle" data-i18n="fail.waterTitle">哎呀，掉进水里了</h2>
+            <p id="failText" data-i18n="fail.waterText">蜻蜓可以把小蛙送回上一片荷叶。</p>
             <div class="result-stats">
-              <div class="score-line"><span>本次前进</span><strong id="failSteps">0 步</strong></div>
-              <div class="score-line"><span>历史最佳</span><strong id="failBest">0 步</strong></div>
-              <div class="score-line"><span>精准落地</span><strong id="failPerfect">0 次</strong></div>
-              <div class="score-line"><span>本局收集</span><strong id="failFireflies">+0 ✦</strong></div>
+              <div class="score-line"><span data-i18n="stats.steps">本次前进</span><strong id="failSteps">0 步</strong></div>
+              <div class="score-line"><span data-i18n="stats.best">历史最佳</span><strong id="failBest">0 步</strong></div>
+              <div class="score-line"><span data-i18n="stats.perfect">精准落地</span><strong id="failPerfect">0 次</strong></div>
+              <div class="score-line"><span data-i18n="stats.collected">本局收集</span><strong id="failFireflies">+0 ✦</strong></div>
             </div>
             <button id="reviveButton" class="primary-button ad-button" type="button">
-              <span>▶</span> 蜻蜓救援
+              <span>▶</span> <span data-i18n="fail.rescue">蜻蜓救援</span>
             </button>
-            <button id="restartButton" class="text-button" type="button">重新挑战</button>
-            <button id="homeButton" class="text-button home-button" type="button">返回首页</button>
-            <small id="rescueNote">每局可以使用一次蜻蜓救援</small>
+            <button id="restartButton" class="text-button" type="button" data-i18n="fail.restart">重新挑战</button>
+            <button id="homeButton" class="text-button home-button" type="button" data-i18n="fail.home">返回首页</button>
+            <small id="rescueNote" data-i18n="fail.rescueOnce">每局可以使用一次蜻蜓救援</small>
           </div>
         </div>
       </section>
 
       <aside class="prototype-note">
-        <span>无尽模式原型</span>
-        <p>手机上按住画面蓄力，松开跳跃；电脑上使用鼠标。</p>
+        <span data-i18n="prototype.title">无尽模式原型</span>
+        <p data-i18n="prototype.body">手机上按住画面蓄力，松开跳跃；电脑上使用鼠标。</p>
       </aside>
     </main>
     <script type="module" src="./src/main.mjs"></script>

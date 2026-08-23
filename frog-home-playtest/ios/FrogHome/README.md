@@ -17,6 +17,7 @@
 - 仅竖屏
 - App 名称：小蛙回家路
 - 版本：1.0.0（Build 1）
+- 简体中文、繁体中文、英语、日语、韩语；自动跟随系统，也可在首页切换
 - 无广告、无登录、无联网依赖
 - 不跟踪、不收集用户数据
 
@@ -44,7 +45,7 @@ cd ios/FrogHome
 
 ## App Store Connect
 
-逐项操作见 [`APP_STORE_CHECKLIST.md`](./APP_STORE_CHECKLIST.md)，中英文商店文案草稿见 [`AppStore`](./AppStore)。
+逐项操作见 [`APP_STORE_CHECKLIST.md`](./APP_STORE_CHECKLIST.md)，五种语言的商店文案草稿见 [`AppStore`](./AppStore)。
 
 当前版本没有接入广告或统计 SDK，因此隐私清单和 App Store 隐私回答均按“不收集数据”准备。如果以后加入穿山甲、优量汇、AdMob、登录、云存档或统计，必须先重新核对 SDK 隐私清单、跟踪授权、隐私政策和 App Store 隐私回答，不能直接沿用当前声明。
 

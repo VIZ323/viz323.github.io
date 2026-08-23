@@ -1,27 +1,29 @@
+import { t } from "./i18n.mjs";
+
 export const PROFILE_STORAGE_KEY = "frog-home-profile-v1";
 
 const RETIRED_SKIN_REFUNDS = Object.freeze({ berry: 8, moon: 20 });
-const NEW_PLAYER_ENCOURAGEMENTS = Object.freeze([
-  "还没有历史纪录 · 本局先到 5 步，留下你的第一项纪录！",
-  "第一次挑战 · 先稳稳跳过 5 步，你会越跳越顺！",
-  "新的荷塘正在等你 · 从 5 步开始写下自己的纪录！",
+const NEW_PLAYER_ENCOURAGEMENT_KEYS = Object.freeze([
+  "record.new.0",
+  "record.new.1",
+  "record.new.2",
 ]);
-const RECORD_ENCOURAGEMENTS = Object.freeze([
-  "超越昨天的自己！",
-  "再向前一步，就是新的纪录！",
-  "稳住节奏，这次一定能更远！",
-  "每一跳都算数，向新纪录出发！",
-  "比上次多一步，就是一次胜利！",
-  "保持手感，把极限再推远一点！",
+const RECORD_ENCOURAGEMENT_KEYS = Object.freeze([
+  "record.encouragement.0",
+  "record.encouragement.1",
+  "record.encouragement.2",
+  "record.encouragement.3",
+  "record.encouragement.4",
+  "record.encouragement.5",
 ]);
 
-export const NEW_PLAYER_ENCOURAGEMENT_COUNT = NEW_PLAYER_ENCOURAGEMENTS.length;
-export const RECORD_ENCOURAGEMENT_COUNT = RECORD_ENCOURAGEMENTS.length;
+export const NEW_PLAYER_ENCOURAGEMENT_COUNT = NEW_PLAYER_ENCOURAGEMENT_KEYS.length;
+export const RECORD_ENCOURAGEMENT_COUNT = RECORD_ENCOURAGEMENT_KEYS.length;
 
 export const MISSIONS = Object.freeze([
-  { id: "reach-5", type: "steps", target: 5, reward: 2, label: "前进 5 步" },
-  { id: "perfect-2", type: "perfect", target: 2, reward: 3, label: "精准落地 2 次" },
-  { id: "reach-10", type: "steps", target: 10, reward: 4, label: "抵达 10 步荷叶" },
+  { id: "reach-5", type: "steps", target: 5, reward: 2, labelKey: "mission.reach5" },
+  { id: "perfect-2", type: "perfect", target: 2, reward: 3, labelKey: "mission.perfect2" },
+  { id: "reach-10", type: "steps", target: 10, reward: 4, labelKey: "mission.reach10" },
 ]);
 
 export function createDefaultProfile() {
@@ -63,10 +65,10 @@ export function recordChallengeForBest(bestScore, variantIndex = 0) {
   const best = Number.isFinite(bestScore) ? Math.max(0, Math.floor(bestScore)) : 0;
   const variant = Number.isFinite(variantIndex) ? Math.max(0, Math.floor(variantIndex)) : 0;
   if (best === 0) {
-    return NEW_PLAYER_ENCOURAGEMENTS[variant % NEW_PLAYER_ENCOURAGEMENT_COUNT];
+    return t(NEW_PLAYER_ENCOURAGEMENT_KEYS[variant % NEW_PLAYER_ENCOURAGEMENT_COUNT]);
   }
-  const encouragement = RECORD_ENCOURAGEMENTS[variant % RECORD_ENCOURAGEMENT_COUNT];
-  return `历史最佳 ${best} 步 · 本局冲击 ${best + 1} 步，${encouragement}`;
+  const encouragement = t(RECORD_ENCOURAGEMENT_KEYS[variant % RECORD_ENCOURAGEMENT_COUNT]);
+  return t("record.challenge", { best, target: best + 1, encouragement });
 }
 
 export function progressForMission(mission, stats) {
@@ -83,13 +85,13 @@ export function feedbackForMiss(jumpDistance, targetDistance) {
   if (jumpDistance < targetDistance) {
     return {
       kind: "short",
-      title: "力度偏小",
-      message: "下次再多按一会儿，就能踩到荷叶啦。",
+      title: t("feedback.shortTitle"),
+      message: t("feedback.shortMessage"),
     };
   }
   return {
     kind: "long",
-    title: "力度偏大",
-    message: "下次早一点松开，会更容易踩稳。",
+    title: t("feedback.longTitle"),
+    message: t("feedback.longMessage"),
   };
 }

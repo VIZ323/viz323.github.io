@@ -13,6 +13,7 @@
 		100000000000000000000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000005 /* Assets.xcassets */; };
 		100000000000000000000005 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* PrivacyInfo.xcprivacy */; };
 		100000000000000000000006 /* Web in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* Web */; };
+		100000000000000000000007 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 300000000000000000000004 /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,11 @@
 		200000000000000000000006 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		200000000000000000000007 /* Web */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Web; sourceTree = "<group>"; };
 		200000000000000000000008 /* FrogHome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FrogHome.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000009 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh-Hans; path = zh-Hans.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		20000000000000000000000A /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh-Hant; path = zh-Hant.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		20000000000000000000000B /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		20000000000000000000000C /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		20000000000000000000000D /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +60,7 @@
 				200000000000000000000004 /* Info.plist */,
 				200000000000000000000005 /* Assets.xcassets */,
 				200000000000000000000006 /* PrivacyInfo.xcprivacy */,
+				300000000000000000000004 /* InfoPlist.strings */,
 				200000000000000000000007 /* Web */,
 			);
 			path = FrogHome;
@@ -68,6 +75,21 @@
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXVariantGroup section */
+		300000000000000000000004 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				200000000000000000000009 /* zh-Hans */,
+				20000000000000000000000A /* zh-Hant */,
+				20000000000000000000000B /* en */,
+				20000000000000000000000C /* ja */,
+				20000000000000000000000D /* ko */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXNativeTarget section */
 		500000000000000000000001 /* FrogHome */ = {
@@ -109,7 +131,10 @@
 			knownRegions = (
 				Base,
 				en,
+				ja,
+				ko,
 				zh-Hans,
+				zh-Hant,
 			);
 			mainGroup = 300000000000000000000001;
 			productRefGroup = 300000000000000000000003 /* Products */;
@@ -129,6 +154,7 @@
 				100000000000000000000004 /* Assets.xcassets in Resources */,
 				100000000000000000000005 /* PrivacyInfo.xcprivacy in Resources */,
 				100000000000000000000006 /* Web in Resources */,
+				100000000000000000000007 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,4 +1,7 @@
 import { FrogGame } from "./game.mjs";
+import { initI18n } from "./i18n.mjs";
+
+initI18n();
 
 const ui = {
   stageText: document.querySelector("#stageText"),
