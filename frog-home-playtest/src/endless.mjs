@@ -3,7 +3,17 @@ export const ENDLESS = Object.freeze({
   edgePadding: 34,
   previewCount: 7,
   restInterval: 10,
+  sinkingOffset: 8,
+  springInterval: 15,
 });
+
+export function specialKindForStep(step) {
+  const normalizedStep = Math.max(1, Math.floor(step));
+  if (normalizedStep % ENDLESS.restInterval === 0) return "rest";
+  if (normalizedStep % ENDLESS.restInterval === ENDLESS.sinkingOffset) return "sinking";
+  if (normalizedStep % ENDLESS.springInterval === 0) return "spring";
+  return null;
+}
 
 export function createSeededRandom(seed = Date.now()) {
   let state = Number(seed) >>> 0;
@@ -111,13 +121,13 @@ export class EndlessGenerator {
     const dx = x - previous.x;
     const yAdvance = Math.sqrt(Math.max(120 * 120, distance * distance - dx * dx));
     const flowerRoll = this.random();
-    const kind = isRest
-      ? "rest"
-      : step % 7 === 0 || flowerRoll < 0.18
+    const specialKind = specialKindForStep(step);
+    const kind = specialKind
+      ?? (step % 7 === 0 || flowerRoll < 0.18
         ? "flower"
         : radius < 71
           ? "small"
-          : "plain";
+          : "plain");
 
     return {
       x: Math.round(x),
