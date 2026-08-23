@@ -24,10 +24,18 @@ import {
   missionForCursor,
   normalizeProfile,
   progressForMission,
-  skinById,
 } from "./progression.mjs";
 
 const VIEW = { width: 750, height: 1334, baselineY: 1015 };
+const FROG_COLORS = Object.freeze({
+  limb: "#4c953d",
+  foot: "#72b94b",
+  bodyTop: "#91ce55",
+  bodyBottom: "#5bab45",
+  brow: "#a5dc68",
+  mouth: "#28523e",
+  blush: "rgba(248, 134, 133, 0.62)",
+});
 
 const SCENES = Object.freeze([
   {
@@ -182,7 +190,6 @@ export class FrogGame {
       bestScore: this.bestScore,
       fireflies: this.profile.fireflies,
       missionId: this.mission.id,
-      skinId: this.profile.selectedSkin,
     });
   }
 
@@ -261,50 +268,11 @@ export class FrogGame {
     return this.mission.reward;
   }
 
-  chooseSkin(id) {
-    const skin = skinById(id);
-    const unlocked = this.profile.unlockedSkins.includes(skin.id);
-    if (!unlocked) {
-      if (this.profile.fireflies < skin.cost) {
-        this.showToast(`还差 ${skin.cost - this.profile.fireflies} 只萤火虫`);
-        track("skin_unlock_blocked", {
-          skinId: skin.id,
-          cost: skin.cost,
-          balance: this.profile.fireflies,
-        });
-        return false;
-      }
-      this.profile.fireflies -= skin.cost;
-      this.profile.unlockedSkins.push(skin.id);
-      track("skin_unlock", {
-        skinId: skin.id,
-        cost: skin.cost,
-        balance: this.profile.fireflies,
-      });
-    }
-    this.profile.selectedSkin = skin.id;
-    this.saveProfile();
-    this.updateCollectionUi();
-    this.showToast(`已换上 · ${skin.name}`);
-    track("skin_select", { skinId: skin.id });
-    return true;
-  }
-
   updateCollectionUi() {
     const previewMission = this.mission ?? missionForCursor(this.profile.missionCursor);
     this.ui.startFireflyText.textContent = String(this.profile.fireflies);
     this.ui.fireflyText.textContent = String(this.profile.fireflies);
     this.ui.missionPreview.textContent = `本局目标：${previewMission.label} · 奖励 ${previewMission.reward} ✦`;
-    this.ui.gameShell.dataset.skin = this.profile.selectedSkin;
-    for (const button of this.ui.skinButtons) {
-      const skin = skinById(button.dataset.skinId);
-      const unlocked = this.profile.unlockedSkins.includes(skin.id);
-      const selected = skin.id === this.profile.selectedSkin;
-      button.classList.toggle("selected", selected);
-      button.classList.toggle("locked", !unlocked);
-      const status = button.querySelector("small");
-      status.textContent = selected ? "已使用" : unlocked ? "可使用" : `${skin.cost} ✦`;
-    }
   }
 
   resetPlatforms() {
@@ -383,7 +351,6 @@ export class FrogGame {
       bestScore: this.bestScore,
       fireflies: this.profile.fireflies,
       missionId: this.mission.id,
-      skinId: this.profile.selectedSkin,
       source: "restart",
     });
   }
@@ -930,7 +897,7 @@ export class FrogGame {
   drawFrog(time) {
     const screen = this.worldToScreen(this.frog.x, this.frog.y);
     const ctx = this.ctx;
-    const colors = skinById(this.profile.selectedSkin).colors;
+    const colors = FROG_COLORS;
     const jumpProgress = this.jump?.progress ?? 0;
     const flight = this.state === "jumping" ? Math.sin(jumpProgress * Math.PI) : 0;
     const jumpArc = this.state === "jumping" && this.jump
