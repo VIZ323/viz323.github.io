@@ -10,9 +10,10 @@ export const MISSIONS = Object.freeze([
 
 export function createDefaultProfile() {
   return {
-    version: 2,
+    version: 3,
     fireflies: 0,
     missionCursor: 0,
+    seenSinkingTutorial: false,
   };
 }
 
@@ -26,13 +27,14 @@ export function normalizeProfile(value) {
     )
     : 0;
   return {
-    version: 2,
+    version: 3,
     fireflies: (Number.isFinite(value.fireflies)
       ? Math.max(0, Math.floor(value.fireflies))
       : 0) + legacyRefund,
     missionCursor: Number.isFinite(value.missionCursor)
       ? Math.max(0, Math.floor(value.missionCursor))
       : 0,
+    seenSinkingTutorial: value.seenSinkingTutorial === true,
   };
 }
 

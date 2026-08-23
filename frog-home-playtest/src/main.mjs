@@ -16,6 +16,7 @@ const ui = {
   powerFill: document.querySelector("#powerFill"),
   powerTarget: document.querySelector("#powerTarget"),
   toast: document.querySelector("#toast"),
+  sinkingTutorial: document.querySelector("#sinkingTutorial"),
   startOverlay: document.querySelector("#startOverlay"),
   missionPreview: document.querySelector("#missionPreview"),
   startFireflyText: document.querySelector("#startFireflyText"),
@@ -38,3 +39,4 @@ document.querySelector("#startButton").addEventListener("click", () => game.star
 document.querySelector("#reviveButton").addEventListener("click", () => game.revive());
 document.querySelector("#restartButton").addEventListener("click", () => game.restart());
 document.querySelector("#homeButton").addEventListener("click", () => game.goHome());
+document.querySelector("#sinkingTutorialButton").addEventListener("click", () => game.dismissSinkingTutorial());
