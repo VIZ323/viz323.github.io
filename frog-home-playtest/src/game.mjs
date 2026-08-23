@@ -829,7 +829,6 @@ export class FrogGame {
     this.drawBackground(time);
     this.drawDistantPlants();
     this.drawAmbientEvents(time);
-    this.drawPathGuide();
     for (let index = 0; index < this.platforms.length; index += 1) {
       this.drawPlatform(this.platforms[index], index, time);
     }
@@ -1004,24 +1003,6 @@ export class FrogGame {
     ctx.fill();
   }
 
-  drawPathGuide() {
-    const current = this.currentPlatform();
-    const target = this.targetPlatform();
-    if (!current || !target) return;
-    const from = this.worldToScreen(current.x, current.y + 15);
-    const to = this.worldToScreen(target.x, target.y + 15);
-    const ctx = this.ctx;
-    ctx.save();
-    ctx.strokeStyle = "rgba(255,255,226,0.54)";
-    ctx.lineWidth = 4;
-    ctx.setLineDash([8, 15]);
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.quadraticCurveTo((from.x + to.x) / 2, Math.min(from.y, to.y) - 115, to.x, to.y);
-    ctx.stroke();
-    ctx.restore();
-  }
-
   drawPlatform(platform, index, time) {
     const screen = this.worldToScreen(platform.x, platform.y);
     const timedSinkAmount = platform.kind === "sinking"
@@ -1040,7 +1021,6 @@ export class FrogGame {
       && ["idle", "charging", "jumping", "tutorial"].includes(this.state);
     const isRest = platform.kind === "rest";
     const isSinking = platform.kind === "sinking";
-    const isFeverTarget = isTarget && this.feverJumps > 0;
     const radius = platform.radius;
     ctx.save();
     ctx.globalAlpha = Math.min(submergedOpacity, departureOpacity);
@@ -1048,26 +1028,6 @@ export class FrogGame {
     if (this.landing?.platformStep === platform.step) {
       const progress = Math.min(1, Math.max(0, (time - this.landing.startedAt) / this.landing.duration));
       impact = Math.sin(progress * Math.PI) * (this.landing.kind === "edge" ? 0.46 : 0.3);
-    }
-
-    if (isTarget) {
-      const pulse = 1 + Math.sin(time * 0.004) * 0.06;
-      ctx.save();
-      ctx.translate(screen.x, screen.y);
-      ctx.scale(pulse, pulse * 0.38);
-      ctx.strokeStyle = isSinking
-        ? "rgba(150, 119, 48, 0.96)"
-        : isFeverTarget
-        ? "rgba(255, 232, 77, 0.94)"
-        : "rgba(255, 238, 130, 0.7)";
-      ctx.shadowColor = isSinking ? "#f2d879" : isFeverTarget ? "#fff06f" : "transparent";
-      ctx.shadowBlur = isSinking || isFeverTarget ? 24 : 0;
-      ctx.lineWidth = isSinking || isFeverTarget ? 13 : 10;
-      if (isSinking) ctx.setLineDash([18, 10]);
-      ctx.beginPath();
-      ctx.arc(0, 0, radius + 13, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
     }
 
     ctx.save();
