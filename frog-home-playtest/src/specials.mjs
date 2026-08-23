@@ -1,14 +1,9 @@
 export const SPECIALS = Object.freeze({
   sinkingGraceMs: 1650,
-  springJumpMultiplier: 1.16,
   feverTrigger: 3,
   feverJumps: 3,
   feverToleranceMultiplier: 1.18,
 });
-
-export function jumpMultiplierForPlatform(platform) {
-  return platform?.kind === "spring" ? SPECIALS.springJumpMultiplier : 1;
-}
 
 export function landingToleranceWithFever(tolerance, feverActive) {
   const safeTolerance = Number.isFinite(tolerance) ? Math.max(0, tolerance) : 0;
