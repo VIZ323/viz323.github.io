@@ -762,54 +762,54 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           }];
           _this.paintBatchPlans = [{
             paintId: 'oat',
-            amount: 8,
+            amount: 157,
             columnIndex: 0,
             depthIndex: 0
           }, {
             paintId: 'ivory',
-            amount: 15,
+            amount: 43,
             columnIndex: 0,
             depthIndex: 1
           }, {
             paintId: 'cream',
-            amount: 31,
+            amount: 30,
             columnIndex: 0,
             depthIndex: 2
           }, {
             paintId: 'ivory',
-            amount: 10,
+            amount: 43,
             columnIndex: 1,
             depthIndex: 0
           }, {
-            paintId: 'cream',
-            amount: 18,
+            paintId: 'cocoa',
+            amount: 6,
             columnIndex: 1,
             depthIndex: 1
           }, {
-            paintId: 'cocoa',
-            amount: 11,
+            paintId: 'blush',
+            amount: 6,
             columnIndex: 1,
             depthIndex: 2
           }, {
             paintId: 'oat',
-            amount: 8,
+            amount: 157,
             columnIndex: 2,
             depthIndex: 0
           }, {
             paintId: 'cream',
-            amount: 28,
+            amount: 30,
             columnIndex: 2,
             depthIndex: 1
           }, {
-            paintId: 'blush',
-            amount: 12,
-            columnIndex: 2,
-            depthIndex: 2
-          }, {
-            paintId: 'cream',
-            amount: 28,
+            paintId: 'cocoa',
+            amount: 5,
             columnIndex: 3,
             depthIndex: 0
+          }, {
+            paintId: 'blush',
+            amount: 6,
+            columnIndex: 3,
+            depthIndex: 1
           }];
           _this.slotPositions = [-132, -66, 0, 66, 132].map(function (x) {
             return new Vec3(x, -86, 0);
@@ -845,9 +845,16 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           _this.audioSource = void 0;
           _this.audioClips = new Map();
           _this.landedSoundCounter = 0;
-          _this.totalRows = 19;
+          _this.boardMinColumn = -10;
+          _this.boardMaxColumn = 10;
+          _this.boardMinRow = 0;
+          _this.boardMaxRow = 22;
+          _this.totalRows = 23;
+          _this.blockVisualSize = 14.7;
           _this.workingSlotCount = 0;
           _this.resolving = false;
+          _this.resolveRequested = false;
+          _this.movingCarCount = 0;
           _this.terminal = false;
           _this.completionWon = false;
           return _this;
@@ -924,7 +931,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.addPanel(this.canvasNode, 'ProgressTrack', 0, y(350, 278), 214, 10, 5, new Color(58, 72, 103, 82));
           this.progressFill = this.addPanel(this.canvasNode, 'ProgressFill', 0, y(350, 278), 208, 7, 3.5, new Color(255, 211, 92, 255));
           this.progressFill.setScale(0.025, 1, 1);
-          this.progressLabel = this.addLabel(this.canvasNode, '0 / 169', 0, y(332, 262), 11, new Color(255, 255, 255, 220), 100, true);
+          this.progressLabel = this.addLabel(this.canvasNode, '0 / 483', 0, y(332, 262), 11, new Color(255, 255, 255, 220), 100, true);
           this.status = this.addLabel(this.canvasNode, '', 0, 0, 1, new Color(0, 0, 0, 0), 1);
           this.status.node.active = false;
           this.addPanel(this.canvasNode, 'SlotShelf', 0, y(-86, -74), 368, 92, 26, new Color(139, 139, 171, 255));
@@ -975,13 +982,13 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.blockAnimal.layer = Layers.Enum.UI_2D;
           this.canvasNode.addChild(this.blockAnimal);
           this.blockAnimal.addComponent(UIOpacity);
-          var layout = [];
+          var animalLayout = [];
           var addRow = function addRow(row, columns, colorAt) {
             columns.forEach(function (column) {
-              return layout.push({
+              return animalLayout.push({
                 row: row,
                 column: column,
-                paintId: colorAt(column)
+                feature: colorAt(column)
               });
             });
           };
@@ -993,7 +1000,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             });
           };
 
-          // 19 行彩色方块组成覆盖动物的外壳；每列从靠近停车场的一端独立疏通。
+          // 先保留兔子的像素轮廓，再把整个棋盘补满；外部背景与动物色带都是真实可上车方块。
           addRow(0, [-6, -5, -4, -3, 3, 4, 5, 6], function (column) {
             return Math.abs(column) >= 5 ? 'oat' : 'ivory';
           });
@@ -1042,9 +1049,39 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           addRow(18, [-4, -3, 3, 4], function (column) {
             return Math.abs(column) === 3 ? 'blush' : 'cream';
           });
-          this.totalRows = Math.max.apply(Math, layout.map(function (entry) {
-            return entry.row;
-          })) + 1;
+          var key = function key(column, row) {
+            return column + ":" + row;
+          };
+          var directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+          var animalByKey = new Map(animalLayout.map(function (entry) {
+            return [key(entry.column, entry.row), entry];
+          }));
+          var animalKeys = new Set(animalByKey.keys());
+          var layout = [];
+          var _loop = function _loop(row) {
+            var _loop2 = function _loop2(_column) {
+              var animal = animalByKey.get(key(_column, row));
+              var boundary = Boolean(animal) && directions.some(function (_ref) {
+                var dx = _ref[0],
+                  dy = _ref[1];
+                return !animalKeys.has(key(_column + dx, row + dy));
+              });
+              var paintId = !animal ? 'oat' : animal.feature === 'cocoa' || animal.feature === 'blush' ? animal.feature : boundary ? 'cream' : 'ivory';
+              layout.push({
+                row: row,
+                column: _column,
+                paintId: paintId,
+                boundary: boundary
+              });
+            };
+            for (var _column = _this4.boardMinColumn; _column <= _this4.boardMaxColumn; _column += 1) {
+              _loop2(_column);
+            }
+          };
+          for (var row = this.boardMinRow; row <= this.boardMaxRow; row += 1) {
+            _loop(row);
+          }
+          this.totalRows = this.boardMaxRow - this.boardMinRow + 1;
           this.paintDefinitions.forEach(function (definition) {
             definition.total = layout.filter(function (entry) {
               return entry.paintId === definition.id;
@@ -1060,31 +1097,21 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
               throw new Error("Paint batch mismatch for " + definition.id + ": blueprint=" + definition.total + ", batches=" + plannedTotal);
             }
           });
-          var baseY = this.compactLayout ? -4 : 0;
-          var pitch = this.compactLayout ? 12.4 : 15;
-          var blockSize = this.compactLayout ? 10.8 : 13.2;
-          var occupied = new Set(layout.map(function (entry) {
-            return entry.column + ":" + entry.row;
-          }));
+          var baseY = this.compactLayout ? -10 : 0;
+          var pitch = this.compactLayout ? 11.8 : 14;
+          var blockSize = pitch + 0.7;
+          this.blockVisualSize = blockSize;
           layout.forEach(function (entry, index) {
             var definition = _this4.getDefinition(entry.paintId);
-            var position = new Vec3(entry.column * pitch, baseY + entry.row * pitch, 0);
-            var boundary = [[entry.column - 1, entry.row], [entry.column + 1, entry.row], [entry.column, entry.row - 1], [entry.column, entry.row + 1]].some(function (_ref) {
-              var column = _ref[0],
-                row = _ref[1];
-              return !occupied.has(column + ":" + row);
-            });
-            var ghost = _this4.createShellSquare(_this4.blockAnimal, "GhostCell" + index, position.x, position.y, blockSize, definition.color, definition.deep, boundary);
-            var fill = _this4.createSoftSquare(_this4.blockAnimal, "FilledCell" + index, position.x, position.y, blockSize, definition.color, definition.deep);
-            fill.active = false;
+            var position = new Vec3(entry.column * pitch, baseY + (entry.row - _this4.boardMinRow) * pitch, 0);
+            var ghost = _this4.createShellSquare(_this4.blockAnimal, "GhostCell" + index, position.x, position.y, blockSize, definition.color, definition.deep, entry.boundary);
             _this4.cells.push({
               row: entry.row,
               column: entry.column,
               paintId: entry.paintId,
               position: position,
               ghost: ghost,
-              fill: fill,
-              boundary: boundary,
+              boundary: entry.boundary,
               completed: false
             });
           });
@@ -1109,6 +1136,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
               home: home.clone(),
               remaining: plan.amount,
               selected: false,
+              parked: false,
               slotIndex: -1,
               columnIndex: plan.columnIndex,
               depthIndex: plan.depthIndex
@@ -1134,7 +1162,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
         };
         _proto.refreshQueueTrays = function refreshQueueTrays(animated) {
           var _this6 = this;
-          var _loop = function _loop(columnIndex) {
+          var _loop3 = function _loop3(columnIndex) {
             var pending = _this6.trays.filter(function (tray) {
               return tray.columnIndex === columnIndex && !tray.selected && tray.remaining > 0;
             }).sort(function (a, b) {
@@ -1166,7 +1194,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             });
           };
           for (var columnIndex = 0; columnIndex < 4; columnIndex += 1) {
-            _loop(columnIndex);
+            _loop3(columnIndex);
           }
         };
         _proto.loadFinalAnimal = function loadFinalAnimal() {
@@ -1212,7 +1240,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             _this7.finalAnimal.setSiblingIndex(_this7.blockAnimal.getSiblingIndex());
             _this7.finalAnimal.active = true;
             _this7.finalAnimalOpacity.opacity = 255;
-            _this7.status.string = '选择彩色空车，无遮挡的同色方块会自动上车';
+            _this7.status.string = '选择彩色空车，外部路径可达的同色方块会自动上车';
             _this7.setAutomationStatus('ready');
             _this7.updateControlButtons();
           })["catch"](function (error) {
@@ -1259,7 +1287,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             return _regeneratorRuntime().wrap(function _callee$(_context) {
               while (1) switch (_context.prev = _context.next) {
                 case 0:
-                  if (!(this.resolving || this.terminal || tray.selected || !this.finalAnimal || !this.isQueueFront(tray))) {
+                  if (!(this.terminal || tray.selected || !this.finalAnimal || !this.isQueueFront(tray))) {
                     _context.next = 2;
                     break;
                   }
@@ -1275,16 +1303,17 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   return _context.abrupt("return");
                 case 5:
                   this.history.push(this.captureSnapshot());
-                  this.resolving = true;
                   tray.selected = true;
+                  tray.parked = false;
                   tray.slotIndex = slotIndex;
                   tray.button.interactable = false;
                   this.activeSlots[slotIndex] = tray;
+                  this.movingCarCount += 1;
                   this.refreshQueueTrays(true);
                   this.updateSlotLabels();
                   this.updateControlButtons();
                   this.setAutomationStatus('running');
-                  this.status.string = tray.definition.name + "\u7A7A\u8F66\u8FDB\u5165\u8F66\u4F4D\uFF0C\u65E0\u906E\u6321\u65B9\u5757\u5F00\u59CB\u4E0A\u8F66\u2026";
+                  this.status.string = tray.definition.name + "\u7A7A\u8F66\u8FDB\u5165\u8F66\u4F4D\uFF0C\u53EF\u8FBE\u65B9\u5757\u5F00\u59CB\u4E0A\u8F66\u2026";
                   this.playSound('select', 0.52);
                   Tween.stopAllByTarget(tray.node);
                   tween(tray.node).to(0.08, {
@@ -1297,13 +1326,22 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   }, {
                     easing: 'quadOut'
                   }).start();
-                  _context.next = 21;
+                  _context.next = 22;
                   return this.wait(0.32);
-                case 21:
-                  this.resolving = false;
-                  _context.next = 24;
+                case 22:
+                  this.movingCarCount = Math.max(0, this.movingCarCount - 1);
+                  if (!(this.terminal || !tray.selected || tray.slotIndex !== slotIndex || this.activeSlots[slotIndex] !== tray)) {
+                    _context.next = 26;
+                    break;
+                  }
+                  this.updateControlButtons();
+                  return _context.abrupt("return");
+                case 26:
+                  tray.parked = true;
+                  this.updateControlButtons();
+                  _context.next = 30;
                   return this.resolveAvailableCells();
-                case 24:
+                case 30:
                 case "end":
                   return _context.stop();
               }
@@ -1317,41 +1355,43 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
         _proto.resolveAvailableCells = /*#__PURE__*/function () {
           var _resolveAvailableCells = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
             var _this9 = this;
-            var jobs, workingTrays, workingNames, neededNames, hasQueueChoice;
+            var jobs, workingTrays, workingNames, walking, neededNames, hasQueueChoice;
             return _regeneratorRuntime().wrap(function _callee2$(_context2) {
               while (1) switch (_context2.prev = _context2.next) {
                 case 0:
+                  this.resolveRequested = true;
                   if (!(this.resolving || this.terminal)) {
-                    _context2.next = 2;
+                    _context2.next = 3;
                     break;
                   }
                   return _context2.abrupt("return");
-                case 2:
-                  this.resolving = true;
                 case 3:
+                  this.resolving = true;
+                case 4:
                   if (this.terminal) {
-                    _context2.next = 34;
+                    _context2.next = 38;
                     break;
                   }
+                  this.resolveRequested = false;
                   if (this.cells.some(function (cell) {
                     return !cell.completed;
                   })) {
-                    _context2.next = 9;
+                    _context2.next = 11;
                     break;
                   }
                   this.resolving = false;
-                  _context2.next = 8;
+                  _context2.next = 10;
                   return this.completeAnimal();
-                case 8:
+                case 10:
                   return _context2.abrupt("return");
-                case 9:
+                case 11:
                   jobs = this.allocateExposedJobs();
                   if (!(jobs.length === 0)) {
-                    _context2.next = 12;
+                    _context2.next = 14;
                     break;
                   }
-                  return _context2.abrupt("break", 34);
-                case 12:
+                  return _context2.abrupt("break", 38);
+                case 14:
                   workingTrays = Array.from(new Set(jobs.map(function (job) {
                     return job.tray;
                   })));
@@ -1361,11 +1401,11 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                     return tray.definition.name;
                   }).join('＋');
                   this.status.string = workingTrays.length > 1 ? workingNames + "\u5C0F\u65B9\u5757\u540C\u65F6\u4E0A\u8F66" : workingNames + "\u5C0F\u65B9\u5757\u6B63\u5728\u4E0A\u8F66";
-                  _context2.next = 19;
-                  return Promise.all(jobs.map(function (job, index) {
-                    return _this9.walkShellBlockToCar(job.tray, job.cell, index * 0.018);
-                  }));
-                case 19:
+
+                  // 先锁定本批逻辑状态，再播放步行动画；这样动画期间新车也能安全进入其他空位。
+                  walking = jobs.map(function (job, index) {
+                    return _this9.walkShellBlockToCar(job.tray, job.cell, index * 0.012);
+                  });
                   jobs.forEach(function (_ref2) {
                     var cell = _ref2.cell,
                       tray = _ref2.tray;
@@ -1374,45 +1414,69 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                     tray.remaining -= 1;
                     tray.countLabel.string = String(tray.remaining);
                   });
+                  this.updateBlueprintPreview();
+                  this.updateControlButtons();
+                  _context2.next = 25;
+                  return Promise.all(walking);
+                case 25:
                   this.landedSoundCounter += jobs.length;
                   workingTrays.forEach(function (_, index) {
                     return _this9.playSound('land', index === 0 ? 0.22 : 0.16);
                   });
                   this.updateSlotLabels();
-                  _context2.next = 25;
-                  return this.wait(0.08);
-                case 25:
-                  this.updateBlueprintPreview();
-                  _context2.next = 28;
-                  return this.celebrateOpenedPaths(jobs);
-                case 28:
                   _context2.next = 30;
+                  return this.wait(0.08);
+                case 30:
+                  _context2.next = 32;
+                  return this.celebrateOpenedPaths(jobs);
+                case 32:
+                  _context2.next = 34;
                   return Promise.all(workingTrays.filter(function (tray) {
                     return tray.remaining === 0;
                   }).map(function (tray) {
                     return _this9.releaseTray(tray);
                   }));
-                case 30:
-                  _context2.next = 32;
-                  return this.wait(0.045);
-                case 32:
-                  _context2.next = 3;
-                  break;
                 case 34:
+                  _context2.next = 36;
+                  return this.wait(0.045);
+                case 36:
+                  _context2.next = 4;
+                  break;
+                case 38:
                   this.resolving = false;
                   this.workingSlotCount = 0;
                   this.updateAutomationMetrics();
                   if (this.cells.some(function (cell) {
                     return !cell.completed;
                   })) {
-                    _context2.next = 41;
+                    _context2.next = 45;
                     break;
                   }
-                  _context2.next = 40;
+                  _context2.next = 44;
                   return this.completeAnimal();
-                case 40:
+                case 44:
                   return _context2.abrupt("return");
-                case 41:
+                case 45:
+                  if (!(this.movingCarCount > 0 || this.activeSlots.some(function (tray) {
+                    return tray && !tray.parked;
+                  }))) {
+                    _context2.next = 50;
+                    break;
+                  }
+                  this.status.string = '空车正在进入停车位…';
+                  this.setAutomationStatus('running');
+                  this.updateControlButtons();
+                  return _context2.abrupt("return");
+                case 50:
+                  if (!this.resolveRequested) {
+                    _context2.next = 54;
+                    break;
+                  }
+                  _context2.next = 53;
+                  return this.resolveAvailableCells();
+                case 53:
+                  return _context2.abrupt("return");
+                case 54:
                   neededNames = Array.from(new Set(this.getExposedCells().map(function (cell) {
                     return _this9.getDefinition(cell.paintId).name;
                   })));
@@ -1420,18 +1484,18 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                     return _this9.isQueueFront(tray);
                   });
                   if (!(this.activeSlots.every(Boolean) || !hasQueueChoice)) {
-                    _context2.next = 47;
+                    _context2.next = 60;
                     break;
                   }
-                  _context2.next = 46;
+                  _context2.next = 59;
                   return this.failBuild(neededNames.join(' / '));
-                case 46:
+                case 59:
                   return _context2.abrupt("return");
-                case 47:
-                  this.status.string = "\u65E0\u906E\u6321\u4F4D\u7F6E\u9700\u8981 " + neededNames.join(' / ') + "\uFF0C\u672A\u6EE1\u7684\u8F66\u7EE7\u7EED\u5360\u4F4D";
+                case 60:
+                  this.status.string = "\u53EF\u8FBE\u4F4D\u7F6E\u9700\u8981 " + neededNames.join(' / ') + "\uFF0C\u672A\u6EE1\u7684\u8F66\u7EE7\u7EED\u5360\u4F4D";
                   this.setAutomationStatus('waiting');
                   this.updateControlButtons();
-                case 50:
+                case 63:
                 case "end":
                   return _context2.stop();
               }
@@ -1453,7 +1517,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   }
                   return _context3.abrupt("return", new Promise(function (resolve) {
                     var definition = _this10.getDefinition(target.paintId);
-                    var walker = _this10.createSoftSquare(_this10.canvasNode, 'WalkingShellBlock', target.position.x, target.position.y, 13, definition.color, definition.deep);
+                    var walker = _this10.createSoftSquare(_this10.canvasNode, 'WalkingShellBlock', target.position.x, target.position.y, _this10.blockVisualSize * 0.92, definition.color, definition.deep);
                     _this10.addWalkingLegs(walker, definition.deep);
                     _this10.transientNodes.push(walker);
                     var sourceOpacity = target.ghost.getComponent(UIOpacity);
@@ -1534,8 +1598,10 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                 case 0:
                   slotIndex = tray.slotIndex;
                   this.activeSlots[slotIndex] = null;
+                  tray.parked = false;
                   tray.slotIndex = -1;
                   this.updateSlotLabels();
+                  this.updateControlButtons();
                   this.createCarExhaust(tray.node.position.clone(), tray.definition.color);
                   tween(tray.node).to(0.08, {
                     scale: new Vec3(0.9, 1.02, 1),
@@ -1552,11 +1618,11 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   tween(tray.opacity).delay(0.24).to(0.14, {
                     opacity: 0
                   }).start();
-                  _context4.next = 9;
+                  _context4.next = 11;
                   return this.wait(0.42);
-                case 9:
+                case 11:
                   tray.node.active = false;
-                case 10:
+                case 12:
                 case "end":
                   return _context4.stop();
               }
@@ -1656,7 +1722,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                 case 2:
                   this.terminal = true;
                   this.completionWon = false;
-                  this.status.string = "\u8F66\u4F4D\u5DF2\u88AB\u672A\u6EE1\u8F66\u8F86\u5360\u6EE1\uFF1B\u65E0\u906E\u6321\u4F4D\u7F6E\u9700\u8981 " + needed;
+                  this.status.string = "\u8F66\u4F4D\u5DF2\u88AB\u672A\u6EE1\u8F66\u8F86\u5360\u6EE1\uFF1B\u53EF\u8FBE\u4F4D\u7F6E\u9700\u8981 " + needed;
                   this.progressLabel.string = '×';
                   this.setAutomationStatus('failed');
                   this.playSound('fail', 0.52);
@@ -1703,8 +1769,6 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             cell.ghost.getComponent(UIOpacity).opacity = 255;
             cell.ghost.setScale(Vec3.ONE);
             cell.ghost.setRotationFromEuler(Vec3.ZERO);
-            cell.fill.active = false;
-            cell.fill.setScale(Vec3.ONE);
           });
           this.activeSlots = Array(5).fill(null);
           this.history = [];
@@ -1716,6 +1780,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             tray.remaining = tray.capacity;
             tray.countLabel.string = String(tray.remaining);
             tray.selected = false;
+            tray.parked = false;
             tray.slotIndex = -1;
             tray.node.active = true;
             tray.node.setScale(Vec3.ONE);
@@ -1723,6 +1788,8 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             tray.button.interactable = false;
           });
           this.resolving = false;
+          this.resolveRequested = false;
+          this.movingCarCount = 0;
           this.terminal = false;
           this.completionWon = false;
           this.workingSlotCount = 0;
@@ -1730,7 +1797,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.hideResult();
           this.updateSlotLabels();
           this.updateBlueprintPreview();
-          this.status.string = '选择彩色空车，无遮挡的同色方块会自动上车';
+          this.status.string = '选择彩色空车，外部路径可达的同色方块会自动上车';
           this.setAutomationStatus('ready');
           this.updateControlButtons();
         };
@@ -1779,30 +1846,64 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           });
           this.updateAutomationMetrics();
         };
-        _proto.isCellExposed = function isCellExposed(cell) {
-          if (cell.completed) return false;
-          return !this.cells.some(function (other) {
-            return !other.completed && other.column === cell.column && other.row < cell.row;
-          });
-        };
         _proto.getExposedCells = function getExposedCells() {
-          var _this14 = this;
+          var key = function key(column, row) {
+            return column + ":" + row;
+          };
+          var directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+          var blocked = new Set(this.cells.filter(function (cell) {
+            return !cell.completed;
+          }).map(function (cell) {
+            return key(cell.column, cell.row);
+          }));
+          var air = new Set();
+          var queue = [[this.boardMinColumn - 1, this.boardMinRow - 1]];
+          var minColumn = this.boardMinColumn - 1;
+          var maxColumn = this.boardMaxColumn + 1;
+          var minRow = this.boardMinRow - 1;
+          var maxRow = this.boardMaxRow + 1;
+          var cursor = 0;
+          var _loop4 = function _loop4() {
+              var _queue$cursor = queue[cursor],
+                column = _queue$cursor[0],
+                row = _queue$cursor[1];
+              cursor += 1;
+              var airKey = key(column, row);
+              if (air.has(airKey) || blocked.has(airKey)) return 0; // continue
+              if (column < minColumn || column > maxColumn || row < minRow || row > maxRow) return 0; // continue
+              air.add(airKey);
+              directions.forEach(function (_ref4) {
+                var dx = _ref4[0],
+                  dy = _ref4[1];
+                return queue.push([column + dx, row + dy]);
+              });
+            },
+            _ret;
+          while (cursor < queue.length) {
+            _ret = _loop4();
+            if (_ret === 0) continue;
+          }
           return this.cells.filter(function (cell) {
-            return _this14.isCellExposed(cell);
+            return !cell.completed && directions.some(function (_ref3) {
+              var dx = _ref3[0],
+                dy = _ref3[1];
+              return air.has(key(cell.column + dx, cell.row + dy));
+            });
           }).sort(function (a, b) {
             return a.row - b.row || a.column - b.column;
           });
         };
         _proto.allocateExposedJobs = function allocateExposedJobs() {
-          var _this15 = this;
+          var _this14 = this;
           var assigned = new Map();
           var cursorByPaint = new Map();
           var jobs = [];
           this.getExposedCells().forEach(function (cell) {
             var _cursorByPaint$get, _assigned$get2;
-            var candidates = _this15.activeSlots.filter(function (tray) {
+            if (jobs.length >= 28) return;
+            var candidates = _this14.activeSlots.filter(function (tray) {
               var _assigned$get;
-              return Boolean(tray && tray.definition.id === cell.paintId && tray.remaining - ((_assigned$get = assigned.get(tray)) != null ? _assigned$get : 0) > 0);
+              return Boolean(tray && tray.parked && tray.definition.id === cell.paintId && tray.remaining - ((_assigned$get = assigned.get(tray)) != null ? _assigned$get : 0) > 0);
             });
             if (candidates.length === 0) return;
             var cursor = (_cursorByPaint$get = cursorByPaint.get(cell.paintId)) != null ? _cursorByPaint$get : 0;
@@ -1893,20 +1994,17 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           node.addComponent(UITransform).setContentSize(size, size);
           var graphics = node.addComponent(Graphics);
 
-          // 彩色方块是盖在完整动物上方的外壳，不是等待填充的空槽。
-          graphics.fillColor = new Color(52, 48, 75, 45);
-          graphics.roundRect(-size / 2 + 1.2, -size / 2 - 1.2, size, size, size * 0.24);
-          graphics.fill();
+          // 方块尺寸略大于网格间距，四边互相压住；只保留轻微圆角，不露出背景缝隙。
           graphics.fillColor = targetColor;
-          graphics.roundRect(-size / 2, -size / 2, size, size, size * 0.24);
+          graphics.roundRect(-size / 2, -size / 2, size, size, Math.min(1.15, size * 0.08));
           graphics.fill();
-          graphics.lineWidth = boundary ? Math.max(1.8, size * 0.16) : Math.max(0.85, size * 0.07);
-          graphics.strokeColor = boundary ? new Color(Math.max(24, targetEdge.r - 34), Math.max(24, targetEdge.g - 34), Math.max(24, targetEdge.b - 34), 255) : new Color(targetEdge.r, targetEdge.g, targetEdge.b, 235);
-          var inset = boundary ? 1.05 : 0.6;
-          graphics.roundRect(-size / 2 + inset, -size / 2 + inset, size - inset * 2, size - inset * 2, size * 0.2);
+          graphics.lineWidth = boundary ? Math.max(1.45, size * 0.105) : Math.max(0.42, size * 0.035);
+          graphics.strokeColor = boundary ? new Color(Math.max(24, targetEdge.r - 24), Math.max(24, targetEdge.g - 24), Math.max(24, targetEdge.b - 24), 255) : new Color(targetEdge.r, targetEdge.g, targetEdge.b, 132);
+          var inset = boundary ? 0.85 : 0.28;
+          graphics.roundRect(-size / 2 + inset, -size / 2 + inset, size - inset * 2, size - inset * 2, Math.min(1, size * 0.07));
           graphics.stroke();
-          graphics.fillColor = new Color(255, 255, 255, 105);
-          graphics.roundRect(-size * 0.28, size * 0.12, size * 0.3, size * 0.12, size * 0.05);
+          graphics.fillColor = new Color(255, 255, 255, 88);
+          graphics.roundRect(-size * 0.3, size * 0.16, size * 0.28, Math.max(0.8, size * 0.075), 0.35);
           graphics.fill();
           node.addComponent(UIOpacity);
           return node;
@@ -1934,16 +2032,16 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           return node;
         };
         _proto.createCelebration = function createCelebration() {
-          var _this16 = this;
+          var _this15 = this;
           var colors = this.paintDefinitions.map(function (definition) {
             return definition.color;
           });
           var burstY = this.compactLayout ? 72 : 92;
-          var _loop2 = function _loop2() {
+          var _loop5 = function _loop5() {
             var ring = new Node("RescueRing:" + ringIndex);
             ring.layer = Layers.Enum.UI_2D;
             ring.setPosition(0, burstY, 0);
-            _this16.canvasNode.addChild(ring);
+            _this15.canvasNode.addChild(ring);
             ring.addComponent(UITransform).setContentSize(160, 160);
             var graphics = ring.addComponent(Graphics);
             graphics.lineWidth = 5 - ringIndex;
@@ -1952,7 +2050,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             graphics.stroke();
             var opacity = ring.addComponent(UIOpacity);
             ring.setScale(0.45, 0.45, 1);
-            _this16.transientNodes.push(ring);
+            _this15.transientNodes.push(ring);
             tween(ring).delay(0.16 + ringIndex * 0.1).to(0.68, {
               scale: new Vec3(1.55, 1.55, 1)
             }, {
@@ -1964,18 +2062,18 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
               easing: 'quadOut'
             }).call(function () {
               ring.destroy();
-              _this16.transientNodes = _this16.transientNodes.filter(function (node) {
+              _this15.transientNodes = _this15.transientNodes.filter(function (node) {
                 return node !== ring;
               });
             }).start();
           };
           for (var ringIndex = 0; ringIndex < 2; ringIndex += 1) {
-            _loop2();
+            _loop5();
           }
-          var _loop3 = function _loop3() {
+          var _loop6 = function _loop6() {
             var angle = Math.PI * 2 * index / 26;
-            var spark = _this16.createSoftSquare(_this16.canvasNode, "PaintSpark" + index, 0, burstY, 8 + index % 3 * 2, colors[index % colors.length], colors[index % colors.length]);
-            _this16.transientNodes.push(spark);
+            var spark = _this15.createSoftSquare(_this15.canvasNode, "PaintSpark" + index, 0, burstY, 8 + index % 3 * 2, colors[index % colors.length], colors[index % colors.length]);
+            _this15.transientNodes.push(spark);
             tween(spark).delay(0.2 + index % 3 * 0.025).by(0.84, {
               position: new Vec3(Math.cos(angle) * (126 + index % 3 * 18), Math.sin(angle) * (126 + index % 2 * 24), 0),
               scale: new Vec3(-0.75, -0.75, 0),
@@ -1984,18 +2082,18 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
               easing: 'quadOut'
             }).call(function () {
               spark.destroy();
-              _this16.transientNodes = _this16.transientNodes.filter(function (node) {
+              _this15.transientNodes = _this15.transientNodes.filter(function (node) {
                 return node !== spark;
               });
             }).start();
           };
           for (var index = 0; index < 26; index += 1) {
-            _loop3();
+            _loop6();
           }
         };
         _proto.celebrateOpenedPaths = /*#__PURE__*/function () {
           var _celebrateOpenedPaths = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(jobs) {
-            var _this17 = this;
+            var _this16 = this;
             var sampleJobs;
             return _regeneratorRuntime().wrap(function _callee7$(_context7) {
               while (1) switch (_context7.prev = _context7.next) {
@@ -2014,9 +2112,9 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                     return index % Math.max(1, Math.ceil(jobs.length / 4)) === 0;
                   }).slice(0, 4);
                   sampleJobs.forEach(function (job, index) {
-                    var definition = _this17.getDefinition(job.cell.paintId);
-                    var spark = _this17.createSoftSquare(_this17.canvasNode, "PathSpark:" + index, job.cell.position.x, job.cell.position.y, 6, definition.color, definition.deep);
-                    _this17.transientNodes.push(spark);
+                    var definition = _this16.getDefinition(job.cell.paintId);
+                    var spark = _this16.createSoftSquare(_this16.canvasNode, "PathSpark:" + index, job.cell.position.x, job.cell.position.y, 6, definition.color, definition.deep);
+                    _this16.transientNodes.push(spark);
                     tween(spark).by(0.28, {
                       position: new Vec3((index - 2) * 8, 26 + index % 2 * 8, 0),
                       scale: new Vec3(-0.55, -0.55, 0),
@@ -2025,7 +2123,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                       easing: 'quadOut'
                     }).call(function () {
                       spark.destroy();
-                      _this17.transientNodes = _this17.transientNodes.filter(function (node) {
+                      _this16.transientNodes = _this16.transientNodes.filter(function (node) {
                         return node !== spark;
                       });
                     }).start();
@@ -2044,19 +2142,19 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           return celebrateOpenedPaths;
         }();
         _proto.createCarExhaust = function createCarExhaust(position, color) {
-          var _this18 = this;
-          var _loop4 = function _loop4() {
+          var _this17 = this;
+          var _loop7 = function _loop7() {
             var puff = new Node("CarExhaust:" + index);
             puff.layer = Layers.Enum.UI_2D;
             puff.setPosition(position.x - 27 - index * 4, position.y - 9 + index % 2 * 4, 0);
-            _this18.canvasNode.addChild(puff);
+            _this17.canvasNode.addChild(puff);
             puff.addComponent(UITransform).setContentSize(18, 18);
             var graphics = puff.addComponent(Graphics);
             graphics.fillColor = new Color(Math.min(255, color.r + 85), Math.min(255, color.g + 85), Math.min(255, color.b + 85), 190);
             graphics.circle(0, 0, 4 + index);
             graphics.fill();
             var opacity = puff.addComponent(UIOpacity);
-            _this18.transientNodes.push(puff);
+            _this17.transientNodes.push(puff);
             tween(puff).delay(index * 0.04).by(0.34, {
               position: new Vec3(-18 - index * 5, 8 + index * 2, 0),
               scale: new Vec3(1.2, 1.2, 0)
@@ -2069,17 +2167,17 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
               easing: 'quadOut'
             }).call(function () {
               puff.destroy();
-              _this18.transientNodes = _this18.transientNodes.filter(function (node) {
+              _this17.transientNodes = _this17.transientNodes.filter(function (node) {
                 return node !== puff;
               });
             }).start();
           };
           for (var index = 0; index < 3; index += 1) {
-            _loop4();
+            _loop7();
           }
         };
         _proto.createLandingRipple = function createLandingRipple(position, color) {
-          var _this19 = this;
+          var _this18 = this;
           var ripple = new Node('LandingRipple');
           ripple.layer = Layers.Enum.UI_2D;
           ripple.setPosition(position);
@@ -2103,7 +2201,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             easing: 'quadOut'
           }).call(function () {
             ripple.destroy();
-            _this19.transientNodes = _this19.transientNodes.filter(function (node) {
+            _this18.transientNodes = _this18.transientNodes.filter(function (node) {
               return node !== ripple;
             });
           }).start();
@@ -2123,8 +2221,8 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           };
         };
         _proto.undoLastMove = function undoLastMove() {
-          var _this20 = this;
-          if (this.resolving || this.history.length === 0 || this.completionWon) return;
+          var _this19 = this;
+          if (this.resolving || this.movingCarCount > 0 || this.history.length === 0 || this.completionWon) return;
           var snapshot = this.history.pop();
           this.clearTransientNodes();
           this.terminal = false;
@@ -2140,7 +2238,6 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.guideAnimalOpacity.opacity = 0;
           this.resetSequencePose();
           this.cells.forEach(function (cell, index) {
-            Tween.stopAllByTarget(cell.fill);
             Tween.stopAllByTarget(cell.ghost);
             Tween.stopAllByTarget(cell.ghost.getComponent(UIOpacity));
             cell.completed = snapshot.completedCells[index];
@@ -2148,8 +2245,6 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             cell.ghost.getComponent(UIOpacity).opacity = cell.completed ? 0 : 255;
             cell.ghost.setScale(Vec3.ONE);
             cell.ghost.setRotationFromEuler(Vec3.ZERO);
-            cell.fill.active = false;
-            cell.fill.setScale(Vec3.ONE);
           });
           this.activeSlots = Array(5).fill(null);
           this.trays.forEach(function (tray, index) {
@@ -2158,15 +2253,16 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             Tween.stopAllByTarget(tray.opacity);
             tray.remaining = trayState.remaining;
             tray.selected = trayState.selected;
+            tray.parked = trayState.slotIndex >= 0 && trayState.remaining > 0;
             tray.slotIndex = trayState.slotIndex;
             tray.countLabel.string = String(tray.remaining);
             tray.opacity.opacity = 255;
             if (tray.slotIndex >= 0 && tray.remaining > 0) {
               tray.node.active = true;
-              tray.node.setPosition(_this20.slotPositions[tray.slotIndex]);
+              tray.node.setPosition(_this19.slotPositions[tray.slotIndex]);
               tray.node.setScale(0.92, 0.92, 1);
               tray.button.interactable = false;
-              _this20.activeSlots[tray.slotIndex] = tray;
+              _this19.activeSlots[tray.slotIndex] = tray;
             } else if (tray.remaining > 0 && !tray.selected) {
               tray.node.active = true;
               tray.node.setScale(Vec3.ONE);
@@ -2185,7 +2281,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.updateControlButtons();
         };
         _proto.restartLevel = function restartLevel() {
-          if (this.resolving || !this.finalAnimal) return;
+          if (this.resolving || this.movingCarCount > 0 || !this.finalAnimal) return;
           this.resetSample();
           this.playSound('select', 0.34);
         };
@@ -2214,23 +2310,24 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.transientNodes = [];
         };
         _proto.updateControlButtons = function updateControlButtons() {
-          var _this21 = this;
+          var _this20 = this;
           if (!this.undoButton || !this.restartButton) return;
-          var undoEnabled = !this.resolving && this.history.length > 0 && !this.completionWon;
-          var restartEnabled = !this.resolving && Boolean(this.finalAnimal);
+          var stable = !this.resolving && this.movingCarCount === 0;
+          var undoEnabled = stable && this.history.length > 0 && !this.completionWon;
+          var restartEnabled = stable && Boolean(this.finalAnimal);
           this.undoButton.interactable = undoEnabled;
           this.undoButtonOpacity.opacity = undoEnabled ? 255 : 96;
           this.restartButton.interactable = restartEnabled;
           this.restartButtonOpacity.opacity = restartEnabled ? 255 : 96;
           this.trays.forEach(function (tray) {
-            tray.button.interactable = Boolean(_this21.finalAnimal && !_this21.resolving && !_this21.terminal && _this21.activeSlots.some(function (active) {
+            tray.button.interactable = Boolean(_this20.finalAnimal && !_this20.terminal && _this20.activeSlots.some(function (active) {
               return active === null;
-            }) && _this21.isQueueFront(tray));
+            }) && _this20.isQueueFront(tray));
           });
           this.updateAutomationMetrics();
         };
         _proto.updateAutomationMetrics = function updateAutomationMetrics() {
-          var _this22 = this;
+          var _this21 = this;
           if (typeof document === 'undefined') return;
           document.documentElement.dataset.completedCells = String(this.cells.filter(function (cell) {
             return cell.completed;
@@ -2240,14 +2337,17 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           document.documentElement.dataset.activePaintSlots = String(this.activeSlots.filter(Boolean).length);
           document.documentElement.dataset.workingPaintSlots = String(this.workingSlotCount);
           document.documentElement.dataset.availablePaintBoxes = String(this.trays.filter(function (tray) {
-            return _this22.isQueueFront(tray);
+            return _this21.isQueueFront(tray);
           }).length);
           document.documentElement.dataset.totalPaintBoxes = String(this.trays.length);
           document.documentElement.dataset.paintColorCount = String(this.paintDefinitions.length);
           document.documentElement.dataset.paintQueueColumns = '4';
           document.documentElement.dataset.paintSlotCapacity = String(this.activeSlots.length);
+          document.documentElement.dataset.boardColumns = String(this.boardMaxColumn - this.boardMinColumn + 1);
+          document.documentElement.dataset.boardRows = String(this.boardMaxRow - this.boardMinRow + 1);
           document.documentElement.dataset.exposedCells = String(this.getExposedCells().length);
           document.documentElement.dataset.activeColorCars = String(this.activeSlots.filter(Boolean).length);
+          document.documentElement.dataset.movingColorCars = String(this.movingCarCount);
         };
         _proto.createSparkle = function createSparkle(name, x, y, size, color, delay) {
           var node = new Node(name);
@@ -2360,9 +2460,9 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           return label;
         };
         _proto.wait = function wait(seconds) {
-          var _this23 = this;
+          var _this22 = this;
           return new Promise(function (resolve) {
-            return _this23.scheduleOnce(resolve, seconds);
+            return _this22.scheduleOnce(resolve, seconds);
           });
         };
         _proto.setAutomationStatus = function setAutomationStatus(status) {
@@ -2371,14 +2471,15 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             document.documentElement.dataset.renderMode = 'color-car-rescue';
             document.documentElement.dataset.visualDimension = '2d';
             document.documentElement.dataset.assetPipeline = 'full-frame-sprite-sequence-2d';
-            document.documentElement.dataset.uiVersion = 'walking-shell-color-cars-v7';
+            document.documentElement.dataset.uiVersion = 'walking-shell-color-cars-v8';
             document.documentElement.dataset.audioPipeline = 'resource-wav-cues';
             document.documentElement.dataset.layoutMode = this.compactLayout ? 'compact' : 'tall';
-            document.documentElement.dataset.blockStyle = 'outlined-shell-passengers-full-animal-reveal';
+            document.documentElement.dataset.blockStyle = 'gapless-full-board-contrast-animal-outline';
             document.documentElement.dataset.gameplayMetaphor = 'walking-shells-board-color-cars';
             document.documentElement.dataset.paintResolution = 'parallel-active-slots';
+            document.documentElement.dataset.inputConcurrency = 'select-while-walkers-moving';
             document.documentElement.dataset.paintBoxModel = 'four-column-front-choice-car-queues';
-            document.documentElement.dataset.unlockModel = 'same-column-clear-path-to-parking';
+            document.documentElement.dataset.unlockModel = 'outside-four-direction-connected-path';
             this.updateAutomationMetrics();
           }
         };
