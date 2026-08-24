@@ -1398,6 +1398,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                 case 14:
                   workingTrays = Array.from(new Set(jobs.map(function (job) {
                     return job.tray;
+
                   })));
                   this.workingSlotCount = workingTrays.length;
                   this.updateAutomationMetrics();
@@ -1579,32 +1580,34 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           var key = function key(column, row) {
             return column + ":" + row;
           };
-          var directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
           var blocked = new Set(this.cells.filter(function (cell) {
             return !cell.completed && cell !== target;
           }).map(function (cell) {
             return key(cell.column, cell.row);
           }));
-          var minColumn = this.boardMinColumn - 1;
-          var maxColumn = this.boardMaxColumn + 1;
-          var minRow = this.boardMinRow - 1;
-          var maxRow = this.boardMaxRow + 1;
+          var carDoor = new Vec3(tray.node.position.x, tray.node.position.y + 6, 0);
+          var goalColumn = Math.round(carDoor.x / this.boardPitch);
+          var goalRow = Math.round((carDoor.y - this.boardBaseY) / this.boardPitch + this.boardMinRow);
+          // 把车辆入口直接放进同一张空白网格寻路，而不是先找任意出口、再固定绕到棋盘下方。
+          // 因此BFS得到的是“当前方块 → 对应车辆”的全局最少网格步数；相同步数时优先向下和朝车辆方向走。
+          var minColumn = Math.min(this.boardMinColumn - 2, goalColumn - 1);
+          var maxColumn = Math.max(this.boardMaxColumn + 2, goalColumn + 1);
+          var minRow = Math.min(this.boardMinRow - 2, goalRow - 1);
+          var maxRow = Math.max(this.boardMaxRow + 2, goalRow + 1);
           var startKey = key(target.column, target.row);
+          var goalKey = key(goalColumn, goalRow);
           var queue = [[target.column, target.row]];
           var visited = new Set([startKey]);
           var parent = new Map();
-          var goal = null;
           var cursor = 0;
           var _loop4 = function _loop4() {
             var _queue$cursor = queue[cursor],
               column = _queue$cursor[0],
               row = _queue$cursor[1];
             cursor += 1;
-            if (column < _this11.boardMinColumn || column > _this11.boardMaxColumn || row < _this11.boardMinRow || row > _this11.boardMaxRow) {
-              goal = [column, row];
-              return 1; // break
-            }
-
+            if (column === goalColumn && row === goalRow) return 1; // break
+            var horizontalTowardCar = goalColumn < column ? [-1, 0] : [1, 0];
+            var directions = [[0, -1], horizontalTowardCar, [-horizontalTowardCar[0], 0], [0, 1]];
             directions.forEach(function (_ref4) {
               var dx = _ref4[0],
                 dy = _ref4[1];
@@ -1621,9 +1624,11 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           while (cursor < queue.length) {
             if (_loop4()) break;
           }
-          if (!goal) return [new Vec3(tray.node.position.x, this.boardBaseY - this.boardPitch * 1.35, 0)];
+          if (!visited.has(goalKey)) {
+            throw new Error("No empty shortest route from " + startKey + " to car " + goalKey);
+          }
           var gridPath = [];
-          var currentKey = key(goal[0], goal[1]);
+          var currentKey = goalKey;
           while (true) {
             var _currentKey$split$map = currentKey.split(':').map(Number),
               _column2 = _currentKey$split$map[0],
@@ -1648,26 +1653,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
               row = _ref3[1];
             return new Vec3(column * _this11.boardPitch, _this11.boardBaseY + (row - _this11.boardMinRow) * _this11.boardPitch, 0);
           };
-          var route = simplified.slice(1).map(toPosition);
-          var _goal = goal,
-            exitColumn = _goal[0],
-            exitRow = _goal[1];
-          var belowY = this.boardBaseY - this.boardPitch * 1.35;
-          var leftX = (this.boardMinColumn - 1.15) * this.boardPitch;
-          var rightX = (this.boardMaxColumn + 1.15) * this.boardPitch;
-          if (exitRow > this.boardMaxRow) {
-            var sideX = Math.abs(exitColumn - this.boardMinColumn) <= Math.abs(exitColumn - this.boardMaxColumn) ? leftX : rightX;
-            route.push(new Vec3(sideX, this.boardBaseY + (this.boardMaxRow + 1.15) * this.boardPitch, 0));
-            route.push(new Vec3(sideX, belowY, 0));
-          } else if (exitColumn < this.boardMinColumn) {
-            route.push(new Vec3(leftX, belowY, 0));
-          } else if (exitColumn > this.boardMaxColumn) {
-            route.push(new Vec3(rightX, belowY, 0));
-          } else {
-            route.push(new Vec3(exitColumn * this.boardPitch, belowY, 0));
-          }
-          route.push(new Vec3(tray.node.position.x, belowY, 0));
-          return route;
+          return simplified.slice(1).map(toPosition);
         };
         _proto.addWalkingLegs = function addWalkingLegs(walker, color) {
           var legs = new Node('TwoLittleLegs');
@@ -2585,14 +2571,14 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             document.documentElement.dataset.renderMode = 'color-car-rescue';
             document.documentElement.dataset.visualDimension = '2d';
             document.documentElement.dataset.assetPipeline = 'full-frame-sprite-sequence-2d';
-            document.documentElement.dataset.uiVersion = 'walking-shell-color-cars-v8-1';
+            document.documentElement.dataset.uiVersion = 'walking-shell-color-cars-v8-2';
             document.documentElement.dataset.audioPipeline = 'resource-wav-cues';
             document.documentElement.dataset.layoutMode = this.compactLayout ? 'compact' : 'tall';
             document.documentElement.dataset.blockStyle = 'beveled-touching-square-grid-animal-outline';
             document.documentElement.dataset.gameplayMetaphor = 'walking-shells-board-color-cars';
             document.documentElement.dataset.paintResolution = 'parallel-active-slots';
             document.documentElement.dataset.inputConcurrency = 'select-while-walkers-moving';
-            document.documentElement.dataset.walkerRoute = 'outside-air-bfs-route';
+            document.documentElement.dataset.walkerRoute = 'global-shortest-empty-route-to-car';
             document.documentElement.dataset.boardRenderer = 'single-batched-graphics';
             document.documentElement.dataset.paintBoxModel = 'four-column-front-choice-car-queues';
             document.documentElement.dataset.unlockModel = 'outside-four-direction-connected-path';
@@ -2813,6 +2799,7 @@ System.register("chunks:///_virtual/T1PaintBuildThreeDProof.ts", ['./rollupPlugi
           }, {
             row: 1,
             x: 0,
+
             paintId: 'coral'
           }, {
             row: 1,
@@ -4069,4 +4056,4 @@ System.register("chunks:///_virtual/T1ThreeDProof.ts", ['./rollupPluginModLoBabe
         execute: function () { }
     };
     });
-});
+
