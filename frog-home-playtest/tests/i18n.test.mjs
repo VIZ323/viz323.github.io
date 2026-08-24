@@ -7,7 +7,7 @@ import {
   formatCount,
   getLocale,
   matchLocale,
-  setLocale,
+  syncLocaleFromSystem,
   translate,
 } from "../src/i18n.mjs";
 import zhHans from "../src/locales/zh-Hans.mjs";
@@ -47,12 +47,12 @@ test("五份语言资源拥有完全相同的键", () => {
   }
 });
 
-test("语言切换会更新计数单位并可恢复默认语言", () => {
+test("系统语言变化会更新计数单位并可恢复原语言", () => {
   const initial = getLocale();
-  setLocale("en", { persist: false });
+  syncLocaleFromSystem(["en-US"]);
   assert.equal(formatCount("step", 1), "1 step");
   assert.equal(formatCount("step", 2), "2 steps");
-  setLocale("ja", { persist: false });
+  syncLocaleFromSystem(["ja-JP"]);
   assert.equal(formatCount("step", 2), "2歩");
-  setLocale(initial, { persist: false });
+  syncLocaleFromSystem([initial]);
 });

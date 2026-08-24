@@ -5,7 +5,6 @@ export default Object.freeze({
   "aria.fever": "Firefly hop jumps remaining",
   "aria.combo": "Precision landing streak",
   "aria.fireflies": "Firefly count",
-  "aria.language": "Choose language",
   "aria.settings": "Open settings",
   "hud.endless": "Endless Pond",
   "hud.best": "Best",

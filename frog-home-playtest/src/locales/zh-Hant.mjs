@@ -5,7 +5,6 @@ export default Object.freeze({
   "aria.fever": "螢火連跳剩餘次數",
   "aria.combo": "精準落地連擊",
   "aria.fireflies": "螢火蟲數量",
-  "aria.language": "選擇語言",
   "aria.settings": "開啟設定",
   "hud.endless": "無盡荷塘",
   "hud.best": "最佳",

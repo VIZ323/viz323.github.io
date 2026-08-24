@@ -5,7 +5,6 @@ export default Object.freeze({
   "aria.fever": "반딧불 연속 점프 남은 횟수",
   "aria.combo": "정확한 착지 연속 기록",
   "aria.fireflies": "반딧불 수",
-  "aria.language": "언어 선택",
   "aria.settings": "설정 열기",
   "hud.endless": "끝없는 연못",
   "hud.best": "최고",
