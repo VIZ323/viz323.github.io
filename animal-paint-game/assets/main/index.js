@@ -726,38 +726,38 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           _this = _Component.call.apply(_Component, [this].concat(args)) || this;
           _this.paintDefinitions = [{
             id: 'cream',
-            name: '奶油杏',
-            shortName: '奶杏',
-            color: new Color(242, 185, 105, 255),
-            deep: new Color(171, 105, 50, 255),
+            name: '珊瑚橙',
+            shortName: '珊橙',
+            color: new Color(247, 126, 91, 255),
+            deep: new Color(185, 68, 55, 255),
             total: 0
           }, {
             id: 'ivory',
-            name: '暖绒白',
-            shortName: '暖白',
-            color: new Color(255, 237, 177, 255),
-            deep: new Color(190, 142, 65, 255),
+            name: '阳光黄',
+            shortName: '阳黄',
+            color: new Color(255, 207, 74, 255),
+            deep: new Color(194, 132, 35, 255),
             total: 0
           }, {
             id: 'oat',
-            name: '燕麦棕',
-            shortName: '燕麦',
-            color: new Color(202, 139, 82, 255),
-            deep: new Color(127, 75, 43, 255),
+            name: '湖水蓝',
+            shortName: '湖蓝',
+            color: new Color(72, 188, 218, 255),
+            deep: new Color(39, 119, 163, 255),
             total: 0
           }, {
             id: 'cocoa',
-            name: '可可棕',
-            shortName: '可可',
-            color: new Color(126, 75, 63, 255),
-            deep: new Color(67, 39, 36, 255),
+            name: '葡萄紫',
+            shortName: '葡紫',
+            color: new Color(137, 105, 204, 255),
+            deep: new Color(80, 61, 150, 255),
             total: 0
           }, {
             id: 'blush',
-            name: '耳朵粉',
-            shortName: '耳粉',
-            color: new Color(240, 126, 146, 255),
-            deep: new Color(170, 68, 91, 255),
+            name: '樱花粉',
+            shortName: '樱粉',
+            color: new Color(241, 112, 170, 255),
+            deep: new Color(175, 63, 125, 255),
             total: 0
           }];
           _this.paintBatchPlans = [{
@@ -960,7 +960,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           parent.addChild(node);
           node.addComponent(UITransform).setContentSize(width, height);
           var graphics = node.addComponent(Graphics);
-          // 背景不再使用与目标相同的像素块语言，避免玩家把装饰误认为待拼区域。
+          // 背景不使用与彩壳相同的像素块语言，避免装饰被误认为可解除区域。
           graphics.fillColor = new Color(225, 239, 241, 255);
           graphics.roundRect(-width / 2, -height / 2, width, height, 12);
           graphics.fill();
@@ -993,7 +993,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             });
           };
 
-          // 19 行微型方块对应背景兔子的脚、肚皮、毛色阴影、脸和长耳。
+          // 19 行彩色方块组成覆盖动物的外壳；玩家从脚向上逐层解除外壳。
           addRow(0, [-6, -5, -4, -3, 3, 4, 5, 6], function (column) {
             return Math.abs(column) >= 5 ? 'oat' : 'ivory';
           });
@@ -1066,7 +1066,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           layout.forEach(function (entry, index) {
             var definition = _this4.getDefinition(entry.paintId);
             var position = new Vec3(entry.column * pitch, baseY + entry.row * pitch, 0);
-            var ghost = _this4.createTargetSquare(_this4.blockAnimal, "GhostCell" + index, position.x, position.y, blockSize, definition.color, definition.deep);
+            var ghost = _this4.createShellSquare(_this4.blockAnimal, "GhostCell" + index, position.x, position.y, blockSize, definition.color, definition.deep);
             var fill = _this4.createSoftSquare(_this4.blockAnimal, "FilledCell" + index, position.x, position.y, blockSize, definition.color, definition.deep);
             fill.active = false;
             _this4.cells.push({
@@ -1199,7 +1199,10 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             _this7.finalAnimalOpacity = _this7.finalAnimal.addComponent(UIOpacity);
             _this7.finalAnimalOpacity.opacity = 0;
             _this7.finalAnimal.active = false;
-            _this7.status.string = '选择颜料罐，方块会自动寻找当前可拼的同色位置';
+            _this7.finalAnimal.setSiblingIndex(_this7.blockAnimal.getSiblingIndex());
+            _this7.finalAnimal.active = true;
+            _this7.finalAnimalOpacity.opacity = 255;
+            _this7.status.string = '选择颜色桶，自动解除同色外壳';
             _this7.setAutomationStatus('ready');
             _this7.updateControlButtons();
           })["catch"](function (error) {
@@ -1271,7 +1274,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   this.updateSlotLabels();
                   this.updateControlButtons();
                   this.setAutomationStatus('running');
-                  this.status.string = tray.definition.name + "\u8FDB\u5165\u989C\u6599\u4F4D\uFF0C\u81EA\u52A8\u5BFB\u627E\u540C\u8272\u65B9\u5757\u2026";
+                  this.status.string = tray.definition.name + "\u8FDB\u5165\u989C\u8272\u4F4D\uFF0C\u81EA\u52A8\u89E3\u9664\u540C\u8272\u5916\u58F3\u2026";
                   this.playSound('select', 0.52);
                   Tween.stopAllByTarget(tray.node);
                   tween(tray.node).to(0.08, {
@@ -1348,7 +1351,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                           workingNames = workingTrays.map(function (tray) {
                             return tray.definition.name;
                           }).join('＋');
-                          _this9.status.string = workingTrays.length > 1 ? workingNames + "\u540C\u65F6\u62FC\u7B2C " + (row + 1) + " \u5C42" : workingNames + "\u81EA\u52A8\u62FC\u5230\u7B2C " + (row + 1) + " \u5C42";
+                          _this9.status.string = workingTrays.length > 1 ? workingNames + "\u540C\u65F6\u89E3\u9664\u7B2C " + (row + 1) + " \u5C42\u5916\u58F3" : workingNames + "\u81EA\u52A8\u89E3\u9664\u7B2C " + (row + 1) + " \u5C42\u5916\u58F3";
                           _context2.next = 16;
                           return Promise.all(jobs.map(function (job, index) {
                             return _this9.flyPaintBlock(job.tray, job.cell, index * 0.012);
@@ -1358,12 +1361,24 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                             var cell = _ref.cell,
                               tray = _ref.tray;
                             cell.completed = true;
-                            cell.fill.active = true;
-                            cell.fill.setScale(0.32, 0.32, 1);
-                            tween(cell.fill).delay(index * 0.008).to(0.14, {
-                              scale: Vec3.ONE
+                            var shellOpacity = cell.ghost.getComponent(UIOpacity);
+                            Tween.stopAllByTarget(cell.ghost);
+                            Tween.stopAllByTarget(shellOpacity);
+                            tween(cell.ghost).delay(index * 0.008).to(0.07, {
+                              scale: new Vec3(1.18, 0.82, 1),
+                              eulerAngles: new Vec3(0, 0, index % 2 ? 8 : -8)
                             }, {
-                              easing: 'backOut'
+                              easing: 'quadOut'
+                            }).to(0.12, {
+                              scale: new Vec3(0.08, 0.08, 1),
+                              eulerAngles: new Vec3(0, 0, index % 2 ? 34 : -34)
+                            }, {
+                              easing: 'quadIn'
+                            }).call(function () {
+                              cell.ghost.active = false;
+                            }).start();
+                            tween(shellOpacity).delay(0.07 + index * 0.008).to(0.11, {
+                              opacity: 0
                             }).start();
                             tray.remaining -= 1;
                             tray.countLabel.string = String(tray.remaining);
@@ -1373,26 +1388,29 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                             return _this9.playSound('land', index === 0 ? 0.22 : 0.16);
                           });
                           _this9.updateSlotLabels();
+                          _context2.next = 22;
+                          return _this9.wait(0.2 + jobs.length * 0.008);
+                        case 22:
                           _this9.updateBlueprintPreview();
                           if (_this9.cells.some(function (cell) {
                             return !cell.completed && cell.row === row;
                           })) {
-                            _context2.next = 24;
+                            _context2.next = 26;
                             break;
                           }
-                          _context2.next = 24;
-                          return _this9.celebrateLayer(row);
-                        case 24:
                           _context2.next = 26;
+                          return _this9.celebrateLayer(row);
+                        case 26:
+                          _context2.next = 28;
                           return Promise.all(workingTrays.filter(function (tray) {
                             return tray.remaining === 0;
                           }).map(function (tray) {
                             return _this9.releaseTray(tray);
                           }));
-                        case 26:
-                          _context2.next = 28;
-                          return _this9.wait(0.045);
                         case 28:
+                          _context2.next = 30;
+                          return _this9.wait(0.045);
+                        case 30:
                         case "end":
                           return _context2.stop();
                       }
@@ -1451,7 +1469,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                 case 26:
                   return _context3.abrupt("return");
                 case 27:
-                  this.status.string = "\u7B2C " + (currentRow + 1) + " \u5C42\u8FD8\u9700\u8981 " + neededNames.join(' / ') + "\uFF0C\u672A\u7528\u5B8C\u989C\u6599\u7EE7\u7EED\u5360\u4F4D";
+                  this.status.string = "\u7B2C " + (currentRow + 1) + " \u5C42\u8FD8\u9700\u8981 " + neededNames.join(' / ') + "\uFF0C\u672A\u7528\u5B8C\u989C\u8272\u7EE7\u7EED\u5360\u4F4D";
                   this.setAutomationStatus('waiting');
                   this.updateControlButtons();
                 case 30:
@@ -1559,40 +1577,15 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   this.completionWon = true;
                   this.setAutomationStatus('transforming');
                   this.progressLabel.string = this.cells.length + " / " + this.cells.length;
-                  this.status.string = '拼完了！方块正在变成完整的小动物动画…';
+                  this.status.string = '外壳全部解除，小动物获救！';
                   this.updateControlButtons();
-                  Tween.stopAllByTarget(this.blockAnimal);
-                  tween(this.blockAnimal).to(0.2, {
-                    scale: new Vec3(1.08, 0.94, 1)
-                  }, {
-                    easing: 'quadOut'
-                  }).to(0.24, {
-                    scale: new Vec3(0.78, 1.12, 1)
-                  }, {
-                    easing: 'quadInOut'
-                  }).to(0.32, {
-                    scale: new Vec3(0.18, 0.18, 1)
-                  }, {
-                    easing: 'quadIn'
-                  }).start();
-                  tween(this.blockAnimal.getComponent(UIOpacity)).delay(0.28).to(0.38, {
-                    opacity: 0
-                  }).start();
-                  Tween.stopAllByTarget(this.guideAnimalOpacity);
-                  tween(this.guideAnimalOpacity).delay(0.22).to(0.36, {
-                    opacity: 0
-                  }).start();
                   this.resetSequencePose();
                   this.finalAnimal.active = true;
-                  this.finalAnimal.setScale(0.64, 0.64, 1);
-                  this.finalAnimalOpacity.opacity = 0;
-                  tween(this.finalAnimalOpacity).delay(0.34).to(0.28, {
-                    opacity: 255
-                  }).start();
-                  tween(this.finalAnimal).delay(0.34).to(0.34, {
-                    scale: new Vec3(1.06, 0.94, 1)
+                  this.finalAnimalOpacity.opacity = 255;
+                  tween(this.finalAnimal).to(0.18, {
+                    scale: new Vec3(1.08, 0.92, 1)
                   }, {
-                    easing: 'backOut'
+                    easing: 'quadOut'
                   }).call(function () {
                     _this11.finalAnimalSprite.spriteFrame = _this11.finalAnimalFrames.joy;
                     _this11.playSound('success', 0.68);
@@ -1610,15 +1603,15 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                     _this11.finalAnimalSprite.spriteFrame = _this11.finalAnimalFrames.normal;
                   }).start();
                   this.createCelebration();
-                  _context6.next = 22;
-                  return this.wait(0.95);
-                case 22:
+                  _context6.next = 15;
+                  return this.wait(0.72);
+                case 15:
                   this.progressLabel.string = this.cells.length + " / " + this.cells.length;
-                  this.status.string = '完成：从脚拼起，最终变成可爱小动物';
-                  this.showResult('success', '完成！', '兔兔完成');
+                  this.status.string = '完成：彩色外壳解除，兔兔获救';
+                  this.showResult('success', '获救！', '兔兔自由了');
                   this.setAutomationStatus('passed');
                   this.updateControlButtons();
-                case 27:
+                case 20:
                 case "end":
                   return _context6.stop();
               }
@@ -1643,11 +1636,11 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                 case 2:
                   this.terminal = true;
                   this.completionWon = false;
-                  this.status.string = "\u989C\u6599\u4F4D\u5DF2\u88AB\u7B49\u5F85\u989C\u8272\u5360\u6EE1\uFF1B\u5F53\u524D\u5C42\u9700\u8981 " + needed;
+                  this.status.string = "\u989C\u8272\u4F4D\u5DF2\u88AB\u7B49\u5F85\u989C\u8272\u5360\u6EE1\uFF1B\u5F53\u524D\u5C42\u9700\u8981 " + needed;
                   this.progressLabel.string = '×';
                   this.setAutomationStatus('failed');
                   this.playSound('fail', 0.52);
-                  this.showResult('fail', '颜料位已满', "\u9700\u8981 " + needed);
+                  this.showResult('fail', '颜色位已满', "\u9700\u8981 " + needed);
                   this.activeSlots.forEach(function (tray) {
                     if (!tray) return;
                     tween(tray.node).to(0.08, {
@@ -1679,13 +1672,17 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           Tween.stopAllByTarget(this.sceneCard);
           this.blockAnimal.setScale(Vec3.ONE);
           this.blockAnimal.getComponent(UIOpacity).opacity = 255;
-          this.finalAnimal.active = false;
-          this.finalAnimalOpacity.opacity = 0;
+          this.finalAnimal.active = true;
+          this.finalAnimalOpacity.opacity = 255;
           Tween.stopAllByTarget(this.guideAnimalOpacity);
           this.guideAnimalOpacity.opacity = 0;
           this.resetSequencePose();
           this.cells.forEach(function (cell) {
             cell.completed = false;
+            cell.ghost.active = true;
+            cell.ghost.getComponent(UIOpacity).opacity = 255;
+            cell.ghost.setScale(Vec3.ONE);
+            cell.ghost.setRotationFromEuler(Vec3.ZERO);
             cell.fill.active = false;
             cell.fill.setScale(Vec3.ONE);
           });
@@ -1713,7 +1710,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.hideResult();
           this.updateSlotLabels();
           this.updateBlueprintPreview();
-          this.status.string = '选择颜料罐，方块会自动寻找当前可拼的同色位置';
+          this.status.string = '选择颜色桶，自动解除同色外壳';
           this.setAutomationStatus('ready');
           this.updateControlButtons();
         };
@@ -1729,8 +1726,10 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           var currentRow = this.getCurrentRow();
           this.cells.forEach(function (cell) {
             var opacity = cell.ghost.getComponent(UIOpacity);
-            opacity.opacity = cell.completed ? 0 : cell.row === currentRow ? 255 : 150;
-            cell.ghost.setScale(cell.completed ? Vec3.ONE : cell.row === currentRow ? new Vec3(1.08, 1.08, 1) : Vec3.ONE);
+            cell.ghost.active = !cell.completed;
+            opacity.opacity = cell.completed ? 0 : cell.row === currentRow ? 255 : 232;
+            cell.ghost.setScale(cell.completed ? Vec3.ONE : cell.row === currentRow ? new Vec3(1.06, 1.06, 1) : Vec3.ONE);
+            if (!cell.completed) cell.ghost.setRotationFromEuler(Vec3.ZERO);
           });
           var completedCount = this.cells.filter(function (cell) {
             return cell.completed;
@@ -1839,7 +1838,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             easing: 'sineInOut'
           })).start();
         };
-        _proto.createTargetSquare = function createTargetSquare(parent, name, x, y, size, targetColor, targetEdge) {
+        _proto.createShellSquare = function createShellSquare(parent, name, x, y, size, targetColor, targetEdge) {
           var node = new Node(name);
           node.layer = Layers.Enum.UI_2D;
           node.setPosition(x, y, 0);
@@ -1847,16 +1846,19 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           node.addComponent(UITransform).setContentSize(size, size);
           var graphics = node.addComponent(Graphics);
 
-          // 未填区域始终是“空槽”：白色内芯 + 目标色边框与色点；绝不画成实心色块。
-          graphics.fillColor = new Color(255, 255, 255, 238);
+          // 彩色方块是盖在完整动物上方的外壳，不是等待填充的空槽。
+          graphics.fillColor = new Color(52, 48, 75, 45);
+          graphics.roundRect(-size / 2 + 1.2, -size / 2 - 1.2, size, size, size * 0.24);
+          graphics.fill();
+          graphics.fillColor = targetColor;
           graphics.roundRect(-size / 2, -size / 2, size, size, size * 0.24);
           graphics.fill();
-          graphics.lineWidth = Math.max(1.25, size * 0.12);
+          graphics.lineWidth = Math.max(1, size * 0.08);
           graphics.strokeColor = new Color(targetEdge.r, targetEdge.g, targetEdge.b, 255);
-          graphics.roundRect(-size / 2 + 0.8, -size / 2 + 0.8, size - 1.6, size - 1.6, size * 0.2);
+          graphics.roundRect(-size / 2 + 0.6, -size / 2 + 0.6, size - 1.2, size - 1.2, size * 0.2);
           graphics.stroke();
-          graphics.fillColor = new Color(targetColor.r, targetColor.g, targetColor.b, 255);
-          graphics.circle(0, 0, Math.max(1.6, size * 0.18));
+          graphics.fillColor = new Color(255, 255, 255, 105);
+          graphics.roundRect(-size * 0.28, size * 0.12, size * 0.3, size * 0.12, size * 0.05);
           graphics.fill();
           node.addComponent(UIOpacity);
           return node;
@@ -1912,26 +1914,12 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
         _proto.celebrateLayer = /*#__PURE__*/function () {
           var _celebrateLayer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(row) {
             var _this16 = this;
-            var rowCells, rowCenterY, _loop4, index;
+            var rowCenterY, _loop4, index;
             return _regeneratorRuntime().wrap(function _callee7$(_context9) {
               while (1) switch (_context9.prev = _context9.next) {
                 case 0:
                   this.playSound('layer', 0.32);
                   this.status.string = "\u7B2C " + (row + 1) + " \u5C42\u5B8C\u6210\uFF0C\u65B0\u4E00\u5C42\u5DF2\u7ECF\u5F00\u653E";
-                  rowCells = this.cells.filter(function (cell) {
-                    return cell.row === row;
-                  });
-                  rowCells.forEach(function (cell, index) {
-                    tween(cell.fill).delay(index * 0.018).to(0.08, {
-                      scale: new Vec3(1.12, 0.9, 1)
-                    }, {
-                      easing: 'quadOut'
-                    }).to(0.1, {
-                      scale: Vec3.ONE
-                    }, {
-                      easing: 'backOut'
-                    }).start();
-                  });
                   tween(this.sceneCard).to(0.08, {
                     scale: new Vec3(1.008, 1.008, 1)
                   }, {
@@ -1969,20 +1957,20 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                     }, _loop4);
                   });
                   index = 0;
-                case 8:
+                case 6:
                   if (!(index < 5)) {
-                    _context9.next = 13;
+                    _context9.next = 11;
                     break;
                   }
-                  return _context9.delegateYield(_loop4(), "t0", 10);
-                case 10:
+                  return _context9.delegateYield(_loop4(), "t0", 8);
+                case 8:
                   index += 1;
-                  _context9.next = 8;
+                  _context9.next = 6;
                   break;
-                case 13:
-                  _context9.next = 15;
+                case 11:
+                  _context9.next = 13;
                   return this.wait(0.13);
-                case 15:
+                case 13:
                 case "end":
                   return _context9.stop();
               }
@@ -2049,15 +2037,21 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           Tween.stopAllByTarget(this.blockAnimal);
           this.blockAnimal.setScale(Vec3.ONE);
           this.blockAnimal.getComponent(UIOpacity).opacity = 255;
-          this.finalAnimal.active = false;
-          this.finalAnimalOpacity.opacity = 0;
+          this.finalAnimal.active = true;
+          this.finalAnimalOpacity.opacity = 255;
           Tween.stopAllByTarget(this.guideAnimalOpacity);
           this.guideAnimalOpacity.opacity = 0;
           this.resetSequencePose();
           this.cells.forEach(function (cell, index) {
             Tween.stopAllByTarget(cell.fill);
+            Tween.stopAllByTarget(cell.ghost);
+            Tween.stopAllByTarget(cell.ghost.getComponent(UIOpacity));
             cell.completed = snapshot.completedCells[index];
-            cell.fill.active = cell.completed;
+            cell.ghost.active = !cell.completed;
+            cell.ghost.getComponent(UIOpacity).opacity = cell.completed ? 0 : 255;
+            cell.ghost.setScale(Vec3.ONE);
+            cell.ghost.setRotationFromEuler(Vec3.ZERO);
+            cell.fill.active = false;
             cell.fill.setScale(Vec3.ONE);
           });
           this.activeSlots = Array(5).fill(null);
@@ -2275,13 +2269,14 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
         _proto.setAutomationStatus = function setAutomationStatus(status) {
           if (typeof document !== 'undefined') {
             document.documentElement.dataset.t1Status = status;
-            document.documentElement.dataset.renderMode = 'paint-block-build';
+            document.documentElement.dataset.renderMode = 'color-shell-rescue';
             document.documentElement.dataset.visualDimension = '2d';
             document.documentElement.dataset.assetPipeline = 'full-frame-sprite-sequence-2d';
-            document.documentElement.dataset.uiVersion = 'paint-queue-board-v5-readable';
+            document.documentElement.dataset.uiVersion = 'color-shell-rescue-v6';
             document.documentElement.dataset.audioPipeline = 'resource-wav-cues';
             document.documentElement.dataset.layoutMode = this.compactLayout ? 'compact' : 'tall';
-            document.documentElement.dataset.blockStyle = 'hollow-targets-solid-completed-blocks';
+            document.documentElement.dataset.blockStyle = 'solid-color-shell-removal-full-animal-reveal';
+            document.documentElement.dataset.gameplayMetaphor = 'hybrid-shell-rescue';
             document.documentElement.dataset.paintResolution = 'parallel-active-slots';
             document.documentElement.dataset.paintBoxModel = 'four-column-front-choice-queues';
             this.updateAutomationMetrics();
