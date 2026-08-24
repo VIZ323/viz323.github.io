@@ -75,6 +75,7 @@
 
         <div id="startOverlay" class="overlay visible">
           <div class="story-card">
+            <button id="settingsButton" class="settings-button" type="button" aria-label="设置" data-i18n-aria="aria.settings">⚙</button>
             <label class="language-picker">
               <span aria-hidden="true">🌐</span>
               <select id="languageSelect" aria-label="选择语言" data-i18n-aria="aria.language">
@@ -103,6 +104,26 @@
           </div>
         </div>
 
+        <div id="settingsOverlay" class="overlay settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+          <div class="settings-card">
+            <span class="settings-kicker" data-i18n="settings.kicker">游戏偏好</span>
+            <h2 id="settingsTitle" data-i18n="settings.title">设置</h2>
+            <label class="setting-row" for="soundToggle">
+              <span><strong data-i18n="settings.sound">音效</strong><small data-i18n="settings.soundHint">跳跃、落地与水花声音</small></span>
+              <input id="soundToggle" type="checkbox" checked />
+              <i aria-hidden="true"></i>
+            </label>
+            <label class="setting-row" for="hapticsToggle">
+              <span><strong data-i18n="settings.haptics">触感反馈</strong><small data-i18n="settings.hapticsHint">起跳、落地与落水震动</small></span>
+              <input id="hapticsToggle" type="checkbox" checked />
+              <i aria-hidden="true"></i>
+            </label>
+            <button id="resetTutorialButton" class="settings-reset-button" type="button" data-i18n="settings.replayTutorial">重新查看下沉荷叶教程</button>
+            <small id="tutorialResetStatus" class="settings-status" hidden data-i18n="settings.resetDone">已重置，下次遇见时会再次显示</small>
+            <button id="settingsCloseButton" class="primary-button settings-close-button" type="button" data-i18n="settings.close">完成</button>
+          </div>
+        </div>
+
         <div id="failOverlay" class="overlay">
           <div class="result-card fail-card">
             <span class="result-emoji">💦</span>
@@ -114,8 +135,8 @@
               <div class="score-line"><span data-i18n="stats.perfect">精准落地</span><strong id="failPerfect">0 次</strong></div>
               <div class="score-line"><span data-i18n="stats.collected">本局收集</span><strong id="failFireflies">+0 ✦</strong></div>
             </div>
-            <button id="reviveButton" class="primary-button ad-button" type="button">
-              <span>▶</span> <span data-i18n="fail.rescue">蜻蜓救援</span>
+            <button id="reviveButton" class="primary-button rescue-button" type="button">
+              <span>✦</span> <span id="reviveButtonText">消耗 8 ✦ 救援</span>
             </button>
             <button id="restartButton" class="text-button" type="button" data-i18n="fail.restart">重新挑战</button>
             <button id="homeButton" class="text-button home-button" type="button" data-i18n="fail.home">返回首页</button>

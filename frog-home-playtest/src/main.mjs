@@ -23,6 +23,10 @@ const ui = {
   startOverlay: document.querySelector("#startOverlay"),
   missionPreview: document.querySelector("#missionPreview"),
   startFireflyText: document.querySelector("#startFireflyText"),
+  settingsOverlay: document.querySelector("#settingsOverlay"),
+  soundToggle: document.querySelector("#soundToggle"),
+  hapticsToggle: document.querySelector("#hapticsToggle"),
+  tutorialResetStatus: document.querySelector("#tutorialResetStatus"),
   failOverlay: document.querySelector("#failOverlay"),
   failTitle: document.querySelector("#failTitle"),
   failText: document.querySelector("#failText"),
@@ -32,6 +36,7 @@ const ui = {
   failFireflies: document.querySelector("#failFireflies"),
   rescueNote: document.querySelector("#rescueNote"),
   reviveButton: document.querySelector("#reviveButton"),
+  reviveButtonText: document.querySelector("#reviveButtonText"),
   restartButton: document.querySelector("#restartButton"),
   homeButton: document.querySelector("#homeButton"),
 };
@@ -39,6 +44,11 @@ const ui = {
 const game = new FrogGame(document.querySelector("#game"), ui);
 
 document.querySelector("#startButton").addEventListener("click", () => game.start());
+document.querySelector("#settingsButton").addEventListener("click", () => game.openSettings());
+document.querySelector("#settingsCloseButton").addEventListener("click", () => game.closeSettings());
+document.querySelector("#soundToggle").addEventListener("change", (event) => game.setSoundEnabled(event.currentTarget.checked));
+document.querySelector("#hapticsToggle").addEventListener("change", (event) => game.setHapticsEnabled(event.currentTarget.checked));
+document.querySelector("#resetTutorialButton").addEventListener("click", () => game.resetSinkingTutorial());
 document.querySelector("#reviveButton").addEventListener("click", () => game.revive());
 document.querySelector("#restartButton").addEventListener("click", () => game.restart());
 document.querySelector("#homeButton").addEventListener("click", () => game.goHome());

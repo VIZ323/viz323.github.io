@@ -393,6 +393,157 @@ button {
   cursor: pointer;
 }
 
+.settings-button {
+  position: absolute;
+  z-index: 6;
+  top: 28px;
+  left: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #477562;
+  font-size: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 50%;
+  background: rgba(255, 253, 239, 0.84);
+  box-shadow: 0 5px 13px rgba(27, 83, 64, 0.13);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.settings-overlay {
+  z-index: 27;
+  background: rgba(13, 54, 52, 0.5);
+  backdrop-filter: blur(11px);
+}
+
+.settings-card {
+  width: min(100%, 330px);
+  padding: 23px 24px 22px;
+  color: #254f43;
+  text-align: center;
+  border: 1px solid rgba(226, 255, 246, 0.82);
+  border-radius: 26px;
+  background: rgba(249, 254, 239, 0.98);
+  box-shadow: 0 28px 60px rgba(10, 55, 51, 0.34);
+  transform: translateY(12px) scale(0.98);
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overlay.visible .settings-card {
+  transform: translateY(0) scale(1);
+}
+
+.settings-kicker {
+  color: #45816f;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.settings-card h2 {
+  margin: 8px 0 15px;
+  color: #174c45;
+  font-size: 25px;
+}
+
+.setting-row {
+  position: relative;
+  margin-bottom: 10px;
+  padding: 12px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  border-radius: 15px;
+  background: #eaf3e5;
+  cursor: pointer;
+}
+
+.setting-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.setting-row strong {
+  font-size: 13px;
+}
+
+.setting-row small {
+  color: #748b80;
+  font-size: 9px;
+}
+
+.setting-row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.setting-row i {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 99px;
+  background: #b7c8bf;
+  transition: background 160ms ease;
+}
+
+.setting-row i::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  content: "";
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 5px rgba(33, 81, 64, 0.2);
+  transition: transform 160ms ease;
+}
+
+.setting-row input:checked + i {
+  background: #55a94a;
+}
+
+.setting-row input:checked + i::after {
+  transform: translateX(18px);
+}
+
+.setting-row input:focus-visible + i {
+  outline: 3px solid rgba(77, 155, 69, 0.28);
+}
+
+.settings-reset-button {
+  margin: 3px 0 2px;
+  padding: 9px 12px;
+  color: #568071;
+  font-size: 11px;
+  font-weight: 800;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.settings-status {
+  display: block;
+  margin-bottom: 9px;
+  color: #4b9271;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.settings-status[hidden] {
+  display: none;
+}
+
+.settings-close-button {
+  margin-top: 8px;
+}
+
 .overlay.visible .story-card,
 .overlay.visible .result-card,
 .overlay.visible .mechanic-card {
@@ -781,9 +932,16 @@ html[lang="ko"] .toast {
   box-shadow: 0 3px 0 #2d7537, 0 8px 12px rgba(41, 118, 54, 0.18);
 }
 
-.ad-button {
+.rescue-button {
   background: linear-gradient(135deg, #f1b748, #e0873d);
   box-shadow: 0 9px 0 #b7672e, 0 15px 22px rgba(181, 104, 43, 0.2);
+}
+
+.rescue-button:disabled {
+  color: rgba(255, 255, 255, 0.76);
+  background: linear-gradient(135deg, #c9b889, #ad9b77);
+  box-shadow: 0 6px 0 #8e8065;
+  cursor: not-allowed;
 }
 
 .text-button {

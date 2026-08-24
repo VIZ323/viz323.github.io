@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  FIREFLY_RESCUE_COST,
+  canSpendFireflies,
   NEW_PLAYER_ENCOURAGEMENT_COUNT,
   RECORD_ENCOURAGEMENT_COUNT,
   feedbackForMiss,
@@ -21,27 +23,51 @@ test("移除皮肤后，旧存档会退回已解锁皮肤消耗的萤火虫", ()
     missionCursor: -3,
   });
   assert.deepEqual(profile, {
-    version: 3,
+    version: 4,
     fireflies: 20,
     missionCursor: 0,
     seenSinkingTutorial: false,
+    settings: { sound: true, haptics: true },
   });
 });
 
 test("新版存档不会重复获得已下线皮肤退款", () => {
   const profile = normalizeProfile({
-    version: 3,
+    version: 4,
     fireflies: 20,
     unlockedSkins: ["berry", "moon"],
     missionCursor: 3,
     seenSinkingTutorial: true,
+    settings: { sound: true, haptics: true },
   });
   assert.deepEqual(profile, {
-    version: 3,
+    version: 4,
     fireflies: 20,
     missionCursor: 3,
     seenSinkingTutorial: true,
+    settings: { sound: true, haptics: true },
   });
+});
+
+test("旧存档默认开启音效和触感，设置关闭后可以保留", () => {
+  assert.deepEqual(normalizeProfile({ version: 3 }).settings, {
+    sound: true,
+    haptics: true,
+  });
+  assert.deepEqual(normalizeProfile({
+    version: 4,
+    settings: { sound: false, haptics: false },
+  }).settings, {
+    sound: false,
+    haptics: false,
+  });
+});
+
+test("萤火虫余额必须达到救援费用才能使用", () => {
+  assert.equal(FIREFLY_RESCUE_COST, 8);
+  assert.equal(canSpendFireflies(7, FIREFLY_RESCUE_COST), false);
+  assert.equal(canSpendFireflies(8, FIREFLY_RESCUE_COST), true);
+  assert.equal(canSpendFireflies(20, FIREFLY_RESCUE_COST), true);
 });
 
 test("三种局内目标会循环出现并正确计算进度", () => {
