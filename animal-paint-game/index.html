@@ -38,6 +38,30 @@
 
 </head>
 <body>
+  <!-- animal-rescue-loading-shell-v1 -->
+  <style>
+    #animal-rescue-loader{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#aaa9c5;color:#463c69;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;transition:opacity .22s ease;}
+    #animal-rescue-loader.is-hidden{opacity:0;pointer-events:none;}
+    #animal-rescue-loader .loader-card{width:min(78vw,280px);padding:26px 24px 22px;border:3px solid #decce6;border-radius:24px;background:#fffaf5;text-align:center;box-shadow:0 14px 36px rgba(51,43,82,.18);}
+    #animal-rescue-loader .loader-dots{display:flex;justify-content:center;gap:8px;margin:0 auto 16px;}
+    #animal-rescue-loader .loader-dots i{width:12px;height:12px;border-radius:4px;background:#6d55be;animation:animal-rescue-bounce .8s ease-in-out infinite alternate;}
+    #animal-rescue-loader .loader-dots i:nth-child(2){background:#48bcda;animation-delay:.12s;}
+    #animal-rescue-loader .loader-dots i:nth-child(3){background:#ffcf4a;animation-delay:.24s;}
+    #animal-rescue-loader strong{display:block;font-size:20px;line-height:1.3;}
+    #animal-rescue-loader span{display:block;margin-top:8px;color:#776f8f;font-size:13px;line-height:1.5;}
+    #animal-rescue-loader button{display:none;width:100%;min-height:44px;margin-top:18px;border:2px solid #4e3c97;border-radius:16px;background:#6d55be;color:#fff;font:700 14px/1 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;}
+    #animal-rescue-loader.has-error button{display:block;}
+    @keyframes animal-rescue-bounce{to{transform:translateY(-8px) rotate(8deg);}}
+    @media (prefers-reduced-motion:reduce){#animal-rescue-loader .loader-dots i{animation:none;}#animal-rescue-loader{transition:none;}}
+  </style>
+  <div id="animal-rescue-loader" role="status" aria-live="polite" aria-busy="true">
+    <div class="loader-card">
+      <div class="loader-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <strong>正在准备小动物…</strong>
+      <span>第一次打开可能需要几秒</span>
+      <button type="button" onclick="location.reload()">重新加载</button>
+    </div>
+  </div>
   <div id="GameDiv" cc_exact_fit_screen="true">
       <div id="Cocos3dGameContainer">
         <canvas id="GameCanvas" oncontextmenu="event.preventDefault()" tabindex="99"></canvas>
@@ -57,8 +81,42 @@
 <script src="src/import-map.json" type="systemjs-importmap" charset="utf-8"> </script>
 
 <script>
-    System.import('./index.9838a545.js').catch(function(err) { console.error(err); })
+    System.import('./index.5c402d5e.js').catch(function(err) { console.error(err); })
 </script>
 
+
+  <script id="animal-rescue-loading-controller">
+    (function(){
+      var loader=document.getElementById('animal-rescue-loader');
+      if(!loader)return;
+      var title=loader.querySelector('strong');
+      var detail=loader.querySelector('span');
+      var settled=false;
+      function fail(){
+        if(settled)return;
+        loader.classList.add('has-error');
+        loader.setAttribute('aria-busy','false');
+        title.textContent='加载遇到问题';
+        detail.textContent='请检查网络后重新加载';
+      }
+      function check(){
+        var status=document.documentElement.dataset.t1Status;
+        if(status==='asset-error'){fail();return;}
+        if(status&&status!=='loading'){
+          settled=true;
+          clearInterval(timer);
+          clearTimeout(failureTimer);
+          loader.setAttribute('aria-busy','false');
+          loader.classList.add('is-hidden');
+          setTimeout(function(){loader.remove();},260);
+        }
+      }
+      var timer=setInterval(check,120);
+      var failureTimer=setTimeout(fail,20000);
+      window.addEventListener('error',fail);
+      window.addEventListener('unhandledrejection',fail);
+      check();
+    })();
+  </script>
 </body>
 </html>
