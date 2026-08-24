@@ -5,7 +5,6 @@ export default Object.freeze({
   "aria.fever": "ホタルジャンプ残り回数",
   "aria.combo": "ピッタリ着地コンボ",
   "aria.fireflies": "ホタルの数",
-  "aria.language": "言語を選択",
   "aria.settings": "設定を開く",
   "hud.endless": "どこまでも池",
   "hud.best": "ベスト",

@@ -6,7 +6,6 @@ import ko from "./locales/ko.mjs";
 
 export const DEFAULT_LOCALE = "zh-Hans";
 export const FALLBACK_LOCALE = "en";
-export const LOCALE_STORAGE_KEY = "frog-home-locale";
 export const SUPPORTED_LOCALES = Object.freeze([
   { id: "zh-Hans", htmlLang: "zh-CN", label: "简体中文" },
   { id: "zh-Hant", htmlLang: "zh-TW", label: "繁體中文" },
@@ -43,22 +42,6 @@ export function matchLocale(value) {
   return null;
 }
 
-function storedLocale() {
-  try {
-    return matchLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
-  } catch {
-    return null;
-  }
-}
-
-function queryLocale() {
-  try {
-    return matchLocale(new URLSearchParams(window.location.search).get("lang"));
-  } catch {
-    return null;
-  }
-}
-
 export function detectLocale(languageValues) {
   const values = Array.isArray(languageValues)
     ? languageValues
@@ -74,7 +57,8 @@ export function detectLocale(languageValues) {
 
 let currentLocale = typeof document === "undefined"
   ? DEFAULT_LOCALE
-  : queryLocale() ?? storedLocale() ?? detectLocale();
+  : detectLocale();
+let languageChangeBound = false;
 
 function interpolate(template, params) {
   return String(template).replace(/\{(\w+)\}/g, (match, key) => (
@@ -121,21 +105,12 @@ export function applyDocumentTranslations(
   root.querySelectorAll("[data-i18n-aria]").forEach((element) => {
     element.setAttribute("aria-label", t(element.dataset.i18nAria));
   });
-  const selector = root.querySelector("#languageSelect");
-  if (selector) selector.value = currentLocale;
 }
 
-export function setLocale(locale, { persist = true } = {}) {
-  const matched = matchLocale(locale);
-  if (!matched || matched === currentLocale) return currentLocale;
-  currentLocale = matched;
-  if (persist) {
-    try {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, currentLocale);
-    } catch {
-      // 本地存储不可用时，本次语言切换仍然有效。
-    }
-  }
+export function syncLocaleFromSystem(languageValues) {
+  const detected = detectLocale(languageValues);
+  if (detected === currentLocale) return currentLocale;
+  currentLocale = detected;
   applyDocumentTranslations();
   listeners.forEach((listener) => listener(currentLocale));
   return currentLocale;
@@ -148,7 +123,9 @@ export function onLocaleChange(listener) {
 
 export function initI18n() {
   applyDocumentTranslations();
-  const selector = document.querySelector("#languageSelect");
-  selector?.addEventListener("change", (event) => setLocale(event.currentTarget.value));
+  if (!languageChangeBound) {
+    window.addEventListener("languagechange", () => syncLocaleFromSystem());
+    languageChangeBound = true;
+  }
   return currentLocale;
 }

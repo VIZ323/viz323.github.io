@@ -361,38 +361,6 @@ button {
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.language-picker {
-  position: absolute;
-  z-index: 5;
-  top: 28px;
-  right: 30px;
-  height: 29px;
-  padding: 0 7px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.76);
-  border-radius: 99px;
-  background: rgba(255, 253, 239, 0.84);
-  box-shadow: 0 5px 13px rgba(27, 83, 64, 0.13);
-  backdrop-filter: blur(8px);
-}
-
-.language-picker span {
-  font-size: 12px;
-}
-
-.language-picker select {
-  max-width: 82px;
-  padding: 0 14px 0 2px;
-  color: #356c58;
-  font: 800 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
 .settings-button {
   position: absolute;
   z-index: 6;
