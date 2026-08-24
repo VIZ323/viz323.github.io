@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  LOCALE_DICTIONARIES,
   SUPPORTED_LOCALES,
   detectLocale,
   formatCount,
@@ -10,21 +11,30 @@ import {
   syncLocaleFromSystem,
   translate,
 } from "../src/i18n.mjs";
-import zhHans from "../src/locales/zh-Hans.mjs";
-import zhHant from "../src/locales/zh-Hant.mjs";
-import en from "../src/locales/en.mjs";
-import ja from "../src/locales/ja.mjs";
-import ko from "../src/locales/ko.mjs";
-
-test("系统语言会映射到五种受支持语言", () => {
+test("系统语言会映射到十九种受支持语言", () => {
   assert.equal(matchLocale("zh-CN"), "zh-Hans");
   assert.equal(matchLocale("zh-HK"), "zh-Hant");
   assert.equal(matchLocale("en-US"), "en");
   assert.equal(matchLocale("ja-JP"), "ja");
   assert.equal(matchLocale("ko-KR"), "ko");
-  assert.equal(detectLocale(["fr-FR", "en-GB"]), "en");
-  assert.equal(detectLocale(["fr-FR"]), "en");
-  assert.equal(SUPPORTED_LOCALES.length, 5);
+  assert.equal(matchLocale("es-MX"), "es");
+  assert.equal(matchLocale("pt-PT"), "pt-BR");
+  assert.equal(matchLocale("fr-CA"), "fr");
+  assert.equal(matchLocale("de-AT"), "de");
+  assert.equal(matchLocale("it-IT"), "it");
+  assert.equal(matchLocale("nl-BE"), "nl");
+  assert.equal(matchLocale("ru-RU"), "ru");
+  assert.equal(matchLocale("pl-PL"), "pl");
+  assert.equal(matchLocale("tr-TR"), "tr");
+  assert.equal(matchLocale("ar-SA"), "ar");
+  assert.equal(matchLocale("th-TH"), "th");
+  assert.equal(matchLocale("vi-VN"), "vi");
+  assert.equal(matchLocale("id-ID"), "id");
+  assert.equal(matchLocale("hi-IN"), "hi");
+  assert.equal(detectLocale(["fr-FR", "en-GB"]), "fr");
+  assert.equal(detectLocale(["sv-SE", "en-GB"]), "en");
+  assert.equal(detectLocale(["sv-SE"]), "en");
+  assert.equal(SUPPORTED_LOCALES.length, 19);
 });
 
 test("所有语言都能格式化动态纪录文案", () => {
@@ -40,9 +50,9 @@ test("所有语言都能格式化动态纪录文案", () => {
   }
 });
 
-test("五份语言资源拥有完全相同的键", () => {
-  const expected = Object.keys(zhHans).sort();
-  for (const dictionary of [zhHant, en, ja, ko]) {
+test("十九份语言资源拥有完全相同的键", () => {
+  const expected = Object.keys(LOCALE_DICTIONARIES.en).sort();
+  for (const dictionary of Object.values(LOCALE_DICTIONARIES)) {
     assert.deepEqual(Object.keys(dictionary).sort(), expected);
   }
 });

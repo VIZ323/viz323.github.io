@@ -381,6 +381,16 @@ button {
   cursor: pointer;
 }
 
+html[dir="rtl"] .settings-button {
+  right: 30px;
+  left: auto;
+}
+
+html[dir="rtl"] .setting-row,
+html[dir="rtl"] .score-line {
+  text-align: right;
+}
+
 .settings-overlay {
   z-index: 27;
   background: rgba(13, 54, 52, 0.5);

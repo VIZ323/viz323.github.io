@@ -17,7 +17,7 @@
 - 仅竖屏
 - App 名称：小蛙回家路
 - 版本：1.0.0（Build 1）
-- 简体中文、繁体中文、英语、日语、韩语；自动跟随系统，也可在首页切换
+- 支持 19 种游戏语言并自动跟随系统，不提供游戏内手动切换入口
 - 无广告、无登录、无联网依赖
 - 不跟踪、不收集用户数据
 
@@ -45,7 +45,7 @@ cd ios/FrogHome
 
 ## App Store Connect
 
-逐项操作见 [`APP_STORE_CHECKLIST.md`](./APP_STORE_CHECKLIST.md)，五种语言的商店文案草稿见 [`AppStore`](./AppStore)。
+逐项操作见 [`APP_STORE_CHECKLIST.md`](./APP_STORE_CHECKLIST.md)；当前五种首发商店文案草稿见 [`AppStore`](./AppStore)，其余商店页本地化仍需在提审前补齐。
 
 项目级后续路线、IAA、数据验证、TestFlight 和已确定的产品边界见 [`NEXT_STEPS.md`](../../NEXT_STEPS.md)。
 

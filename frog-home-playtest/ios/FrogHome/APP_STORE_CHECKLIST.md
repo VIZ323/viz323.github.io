@@ -17,7 +17,7 @@
 
 ## 3. 商店信息
 
-- [ ] 使用 `AppStore/zh-Hans.md`、`zh-Hant.md`、`en-US.md`、`ja.md`、`ko.md` 分别添加简体中文、繁体中文、英语、日语和韩语本地化。
+- [ ] 先使用 `AppStore/zh-Hans.md`、`zh-Hant.md`、`en-US.md`、`ja.md`、`ko.md` 添加首批商店页本地化，再为其余 14 种游戏语言补齐 App Store 文案。
 - [ ] 为每种语言上传与实际游戏界面一致的截图；切换模拟器或真机的系统/应用首选语言后重新启动再拍摄。
 - [ ] 分类建议：主分类 Games，子分类 Casual。
 - [ ] 填写版权信息、支持 URL 和隐私政策 URL。
