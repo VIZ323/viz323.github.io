@@ -1,0 +1,143 @@
+{
+    "importBase": "import",
+    "nativeBase": "native",
+    "name": "resources",
+    "deps": [],
+    "uuids": [
+        "012a403f1",
+        "07e793ce-07f7-43f9-a35a-fbe29e6c5a63",
+        "07e793ce-07f7-43f9-a35a-fbe29e6c5a63@6c48a",
+        "07e793ce-07f7-43f9-a35a-fbe29e6c5a63@f9941",
+        "0c9eb2ae6",
+        "19e7ab48-a3be-4f96-a6c2-02789b9ae02d",
+        "19e7ab48-a3be-4f96-a6c2-02789b9ae02d@6c48a",
+        "19e7ab48-a3be-4f96-a6c2-02789b9ae02d@f9941",
+        "27820350-c893-4147-bfe8-52e198e616db",
+        "27820350-c893-4147-bfe8-52e198e616db@6c48a",
+        "27820350-c893-4147-bfe8-52e198e616db@f9941",
+        "2904b0ab-f82b-42ad-a398-8bab0d2311c8",
+        "58e8ef79-d3cc-458a-9f55-25d3cb1090f8",
+        "8e22e21c-a0f7-482b-b3cf-1875af5e7e00",
+        "a345fa54-ab96-45dc-a4bb-7cbfe6cd16cb",
+        "a625dd96-eea6-49d8-bd01-ed006930dd41",
+        "aa93a2ca-6e14-4e6f-a224-c4d4b950f33d",
+        "c8f66d17-351a-48da-a12c-0212d28575c4",
+        "c8facf33-2aee-4689-b81c-bf596fb99ea3",
+        "c8facf33-2aee-4689-b81c-bf596fb99ea3@6c48a",
+        "c8facf33-2aee-4689-b81c-bf596fb99ea3@f9941"
+    ],
+    "paths": {
+        "27820350-c893-4147-bfe8-52e198e616db": [
+            "characters/bunny-t1-v1",
+            "cc.ImageAsset",
+            1
+        ],
+        "27820350-c893-4147-bfe8-52e198e616db@6c48a": [
+            "characters/bunny-t1-v1/texture",
+            "cc.Texture2D",
+            1
+        ],
+        "27820350-c893-4147-bfe8-52e198e616db@f9941": [
+            "characters/bunny-t1-v1/spriteFrame",
+            "cc.SpriteFrame",
+            1
+        ],
+        "aa93a2ca-6e14-4e6f-a224-c4d4b950f33d": [
+            "materials/t1-standard",
+            "cc.Material",
+            1
+        ],
+        "8e22e21c-a0f7-482b-b3cf-1875af5e7e00": [
+            "audio/vertical-slice/fail",
+            "cc.AudioClip",
+            1
+        ],
+        "a625dd96-eea6-49d8-bd01-ed006930dd41": [
+            "audio/vertical-slice/land",
+            "cc.AudioClip",
+            1
+        ],
+        "a345fa54-ab96-45dc-a4bb-7cbfe6cd16cb": [
+            "audio/vertical-slice/layer",
+            "cc.AudioClip",
+            1
+        ],
+        "58e8ef79-d3cc-458a-9f55-25d3cb1090f8": [
+            "audio/vertical-slice/select",
+            "cc.AudioClip",
+            1
+        ],
+        "2904b0ab-f82b-42ad-a398-8bab0d2311c8": [
+            "audio/vertical-slice/success",
+            "cc.AudioClip",
+            1
+        ],
+        "c8facf33-2aee-4689-b81c-bf596fb99ea3": [
+            "characters/bunny-2d-sequence-v1/blink",
+            "cc.ImageAsset",
+            1
+        ],
+        "c8facf33-2aee-4689-b81c-bf596fb99ea3@6c48a": [
+            "characters/bunny-2d-sequence-v1/blink/texture",
+            "cc.Texture2D",
+            1
+        ],
+        "c8facf33-2aee-4689-b81c-bf596fb99ea3@f9941": [
+            "characters/bunny-2d-sequence-v1/blink/spriteFrame",
+            "cc.SpriteFrame",
+            1
+        ],
+        "19e7ab48-a3be-4f96-a6c2-02789b9ae02d": [
+            "characters/bunny-2d-sequence-v1/joy",
+            "cc.ImageAsset",
+            1
+        ],
+        "19e7ab48-a3be-4f96-a6c2-02789b9ae02d@6c48a": [
+            "characters/bunny-2d-sequence-v1/joy/texture",
+            "cc.Texture2D",
+            1
+        ],
+        "19e7ab48-a3be-4f96-a6c2-02789b9ae02d@f9941": [
+            "characters/bunny-2d-sequence-v1/joy/spriteFrame",
+            "cc.SpriteFrame",
+            1
+        ],
+        "07e793ce-07f7-43f9-a35a-fbe29e6c5a63": [
+            "characters/bunny-2d-sequence-v1/normal",
+            "cc.ImageAsset",
+            1
+        ],
+        "07e793ce-07f7-43f9-a35a-fbe29e6c5a63@6c48a": [
+            "characters/bunny-2d-sequence-v1/normal/texture",
+            "cc.Texture2D",
+            1
+        ],
+        "07e793ce-07f7-43f9-a35a-fbe29e6c5a63@f9941": [
+            "characters/bunny-2d-sequence-v1/normal/spriteFrame",
+            "cc.SpriteFrame",
+            1
+        ]
+    },
+    "scenes": {},
+    "packs": {
+        "012a403f1": [
+            "07e793ce-07f7-43f9-a35a-fbe29e6c5a63@6c48a",
+            "19e7ab48-a3be-4f96-a6c2-02789b9ae02d@6c48a",
+            "27820350-c893-4147-bfe8-52e198e616db@6c48a",
+            "c8facf33-2aee-4689-b81c-bf596fb99ea3@6c48a"
+        ],
+        "0c9eb2ae6": [
+            "aa93a2ca-6e14-4e6f-a224-c4d4b950f33d",
+            "c8f66d17-351a-48da-a12c-0212d28575c4"
+        ]
+    },
+    "versions": {
+        "import": [],
+        "native": []
+    },
+    "redirect": [],
+    "debug": true,
+    "extensionMap": {},
+    "hasPreloadScript": true,
+    "dependencyRelationships": {}
+}
