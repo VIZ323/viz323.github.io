@@ -4,6 +4,21 @@ export class TinyAudio {
     this.enabled = true;
   }
 
+  setEnabled(enabled) {
+    this.enabled = enabled !== false;
+    if (!this.enabled) this.suspend();
+  }
+
+  suspend() {
+    if (this.context?.state !== "running") return;
+    this.context.suspend().catch(() => {});
+  }
+
+  resume() {
+    if (!this.enabled || this.context?.state !== "suspended") return;
+    this.context.resume().catch(() => {});
+  }
+
   ensureContext() {
     if (!this.enabled) return null;
     if (!this.context) {
@@ -11,7 +26,7 @@ export class TinyAudio {
       if (!AudioContextClass) return null;
       this.context = new AudioContextClass();
     }
-    if (this.context.state === "suspended") this.context.resume();
+    if (this.context.state === "suspended") this.resume();
     return this.context;
   }
 

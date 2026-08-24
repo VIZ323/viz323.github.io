@@ -1,6 +1,7 @@
 import { t } from "./i18n.mjs";
 
 export const PROFILE_STORAGE_KEY = "frog-home-profile-v1";
+export const FIREFLY_RESCUE_COST = 8;
 
 const RETIRED_SKIN_REFUNDS = Object.freeze({ berry: 8, moon: 20 });
 const NEW_PLAYER_ENCOURAGEMENT_KEYS = Object.freeze([
@@ -28,10 +29,14 @@ export const MISSIONS = Object.freeze([
 
 export function createDefaultProfile() {
   return {
-    version: 3,
+    version: 4,
     fireflies: 0,
     missionCursor: 0,
     seenSinkingTutorial: false,
+    settings: {
+      sound: true,
+      haptics: true,
+    },
   };
 }
 
@@ -45,7 +50,7 @@ export function normalizeProfile(value) {
     )
     : 0;
   return {
-    version: 3,
+    version: 4,
     fireflies: (Number.isFinite(value.fireflies)
       ? Math.max(0, Math.floor(value.fireflies))
       : 0) + legacyRefund,
@@ -53,7 +58,17 @@ export function normalizeProfile(value) {
       ? Math.max(0, Math.floor(value.missionCursor))
       : 0,
     seenSinkingTutorial: value.seenSinkingTutorial === true,
+    settings: {
+      sound: value.settings?.sound !== false,
+      haptics: value.settings?.haptics !== false,
+    },
   };
+}
+
+export function canSpendFireflies(balance, amount) {
+  const available = Number.isFinite(balance) ? Math.max(0, Math.floor(balance)) : 0;
+  const cost = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+  return available >= cost;
 }
 
 export function missionForCursor(cursor) {

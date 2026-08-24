@@ -10,6 +10,7 @@ import {
 } from "./physics.mjs";
 import { TinyAudio } from "./audio.mjs";
 import { AMBIENT_SWIMMERS, swimmerPoseAtTime } from "./ambient.mjs";
+import { pauseDurationBetween, shiftPauseSensitiveTimers } from "./lifecycle.mjs";
 import { formatCount, onLocaleChange, t } from "./i18n.mjs";
 import { cameraFollowSpeedForState, cameraTargetForWorldY } from "./camera.mjs";
 import { track } from "./analytics.mjs";
@@ -20,8 +21,10 @@ import {
   landingToleranceForPlatform,
 } from "./endless.mjs";
 import {
+  FIREFLY_RESCUE_COST,
   PROFILE_STORAGE_KEY,
   RECORD_ENCOURAGEMENT_COUNT,
+  canSpendFireflies,
   feedbackForMiss,
   milestoneRewardForStep,
   missionForCursor,
@@ -112,6 +115,7 @@ export class FrogGame {
     this.bestScore = this.loadBestScore();
     this.homeEncouragementIndex = Math.floor(Math.random() * RECORD_ENCOURAGEMENT_COUNT);
     this.profile = this.loadProfile();
+    this.audio.setEnabled(this.profile.settings.sound);
     this.recordToBeat = this.bestScore;
     this.platforms = [];
     this.generator = null;
@@ -142,6 +146,9 @@ export class FrogGame {
     this.ripples = [];
     this.lastTime = performance.now();
     this.toastTimer = 0;
+    this.lifecyclePaused = false;
+    this.pausedAt = 0;
+    this.visualTimeOffset = 0;
     this.hasJumped = false;
     this.resizeCanvas();
     this.bindInput();
@@ -149,6 +156,7 @@ export class FrogGame {
     this.updateUi();
     this.unsubscribeLocale = onLocaleChange(() => {
       this.updateCollectionUi();
+      this.updateSettingsUi();
       this.updateUi();
     });
     window.addEventListener("resize", () => this.resizeCanvas());
@@ -190,8 +198,42 @@ export class FrogGame {
     this.canvas.addEventListener("pointercancel", () => {
       if (this.state === "charging") this.cancelCharge();
     });
-    window.addEventListener("blur", () => {
-      if (this.state === "charging") this.cancelCharge();
+    const pause = () => this.pauseForLifecycle();
+    const resume = () => {
+      if (!document.hidden) this.resumeFromLifecycle();
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) pause();
+      else resume();
+    });
+    window.addEventListener("pagehide", pause);
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("blur", pause);
+    window.addEventListener("focus", resume);
+  }
+
+  pauseForLifecycle(now = performance.now()) {
+    if (this.lifecyclePaused) return;
+    if (this.state === "charging") this.cancelCharge();
+    this.lifecyclePaused = true;
+    this.pausedAt = now;
+    this.audio.suspend();
+    track("game_paused", { state: this.state, steps: this.steps });
+  }
+
+  resumeFromLifecycle(now = performance.now()) {
+    if (!this.lifecyclePaused) return;
+    const pauseDuration = pauseDurationBetween(this.pausedAt, now);
+    shiftPauseSensitiveTimers(this, pauseDuration);
+    this.visualTimeOffset += pauseDuration;
+    this.lastTime = now;
+    this.lifecyclePaused = false;
+    this.pausedAt = 0;
+    this.audio.resume();
+    track("game_resumed", {
+      state: this.state,
+      steps: this.steps,
+      pauseDurationMs: Math.round(pauseDuration),
     });
   }
 
@@ -210,6 +252,42 @@ export class FrogGame {
       fireflies: this.profile.fireflies,
       missionId: this.mission.id,
     });
+  }
+
+  openSettings() {
+    this.ui.tutorialResetStatus.hidden = true;
+    this.updateSettingsUi();
+    this.ui.settingsOverlay.classList.add("visible");
+  }
+
+  closeSettings() {
+    this.ui.settingsOverlay.classList.remove("visible");
+  }
+
+  setSoundEnabled(enabled) {
+    this.profile.settings.sound = enabled !== false;
+    this.audio.setEnabled(this.profile.settings.sound);
+    this.saveProfile();
+    this.updateSettingsUi();
+  }
+
+  setHapticsEnabled(enabled) {
+    this.profile.settings.haptics = enabled !== false;
+    this.saveProfile();
+    this.updateSettingsUi();
+    if (this.profile.settings.haptics) this.haptic(10);
+  }
+
+  resetSinkingTutorial() {
+    this.profile.seenSinkingTutorial = false;
+    this.saveProfile();
+    this.ui.tutorialResetStatus.textContent = t("settings.resetDone");
+    this.ui.tutorialResetStatus.hidden = false;
+  }
+
+  updateSettingsUi() {
+    this.ui.soundToggle.checked = this.profile.settings.sound;
+    this.ui.hapticsToggle.checked = this.profile.settings.haptics;
   }
 
   loadBestScore() {
@@ -381,9 +459,20 @@ export class FrogGame {
   }
 
   revive() {
-    if (this.reviveUsed || this.steps < 3) return;
-    track("revive_click", { steps: this.steps });
+    if (
+      this.reviveUsed
+      || this.steps < 3
+      || !canSpendFireflies(this.profile.fireflies, FIREFLY_RESCUE_COST)
+    ) return;
+    track("revive_click", {
+      steps: this.steps,
+      cost: FIREFLY_RESCUE_COST,
+      balance: this.profile.fireflies,
+    });
     this.reviveUsed = true;
+    this.profile.fireflies -= FIREFLY_RESCUE_COST;
+    this.saveProfile();
+    this.updateCollectionUi();
     const platform = this.currentPlatform();
     this.frog.x = platform.x;
     this.frog.y = platform.y + 26;
@@ -401,10 +490,14 @@ export class FrogGame {
       if (rescuePlatform) rescuePlatform.radius = Math.max(rescuePlatform.radius, 84 - offset * 3);
     }
     this.ui.failOverlay.classList.remove("visible");
-    this.showToast(t("toast.revived"));
+    this.showToast(t("toast.revived", { count: FIREFLY_RESCUE_COST }));
     this.spawnSparkles(platform.x, platform.y + 48, "#f7cc4d", 12);
     this.updateUi();
-    track("revive_complete", { steps: this.steps });
+    track("revive_complete", {
+      steps: this.steps,
+      cost: FIREFLY_RESCUE_COST,
+      balance: this.profile.fireflies,
+    });
   }
 
   goHome() {
@@ -717,6 +810,7 @@ export class FrogGame {
   }
 
   haptic(pattern) {
+    if (!this.profile.settings.haptics) return;
     try {
       const nativeHaptic = window.webkit?.messageHandlers?.haptic;
       if (nativeHaptic?.postMessage) {
@@ -735,21 +829,32 @@ export class FrogGame {
     this.ui.failPerfect.textContent = formatCount("time", this.perfectCount);
     this.ui.failFireflies.textContent = `+${this.runFireflies} ✦`;
     const canRevive = !this.reviveUsed && this.steps >= 3;
+    const canAffordRescue = canRevive
+      && canSpendFireflies(this.profile.fireflies, FIREFLY_RESCUE_COST);
     this.ui.reviveButton.hidden = !canRevive;
-    this.ui.reviveButton.disabled = !canRevive;
-    this.ui.restartButton.className = canRevive
+    this.ui.reviveButton.disabled = !canAffordRescue;
+    this.ui.reviveButtonText.textContent = t("fail.rescue", { count: FIREFLY_RESCUE_COST });
+    this.ui.restartButton.className = canAffordRescue
       ? "text-button"
       : "primary-button restart-primary";
-    this.ui.restartButton.textContent = canRevive ? t("fail.retry") : t("fail.retryNow");
+    this.ui.restartButton.textContent = canAffordRescue ? t("fail.retry") : t("fail.retryNow");
     this.ui.failTitle.textContent = this.lastMissFeedback?.title ?? t("fail.fallbackTitle");
     this.ui.failText.textContent = this.lastMissFeedback?.message
       ?? t("fail.fallbackMessage");
-    this.ui.rescueNote.textContent = canRevive
-      ? t("fail.rescueAvailable")
+    const missingFireflies = Math.max(0, FIREFLY_RESCUE_COST - this.profile.fireflies);
+    this.ui.rescueNote.textContent = canAffordRescue
+      ? t("fail.rescueAvailable", { count: FIREFLY_RESCUE_COST })
+      : canRevive
+        ? t("fail.rescueInsufficient", { count: missingFireflies })
       : this.reviveUsed
         ? t("fail.rescueUsed")
         : t("fail.rescueLow");
-    if (canRevive) track("revive_offer_shown", { steps: this.steps });
+    if (canRevive) track("revive_offer_shown", {
+      steps: this.steps,
+      cost: FIREFLY_RESCUE_COST,
+      balance: this.profile.fireflies,
+      affordable: canAffordRescue,
+    });
   }
 
   update(time, delta) {
@@ -811,10 +916,12 @@ export class FrogGame {
   }
 
   loop(time) {
-    const delta = Math.min(0.04, (time - this.lastTime) / 1000 || 0);
-    this.lastTime = time;
-    this.update(time, delta);
-    this.draw(time);
+    if (!this.lifecyclePaused) {
+      const delta = Math.min(0.04, (time - this.lastTime) / 1000 || 0);
+      this.lastTime = time;
+      this.update(time, delta);
+    }
+    this.draw(this.lifecyclePaused ? this.pausedAt : time);
     requestAnimationFrame((nextTime) => this.loop(nextTime));
   }
 
@@ -825,16 +932,17 @@ export class FrogGame {
 
   draw(time) {
     const ctx = this.ctx;
+    const visualTime = time - this.visualTimeOffset;
     ctx.clearRect(0, 0, VIEW.width, VIEW.height);
-    this.drawBackground(time);
+    this.drawBackground(visualTime);
     this.drawDistantPlants();
-    this.drawAmbientEvents(time);
+    this.drawAmbientEvents(visualTime);
     for (let index = 0; index < this.platforms.length; index += 1) {
       this.drawPlatform(this.platforms[index], index, time);
     }
     this.drawRipples();
     this.drawParticles();
-    if (this.state !== "failed" || this.particles.length === 0) this.drawFrog(time);
+    if (this.state !== "failed" || this.particles.length === 0) this.drawFrog(visualTime);
     this.drawForeground();
   }
 
