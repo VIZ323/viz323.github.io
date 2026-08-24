@@ -47,6 +47,8 @@ cd ios/FrogHome
 
 逐项操作见 [`APP_STORE_CHECKLIST.md`](./APP_STORE_CHECKLIST.md)，五种语言的商店文案草稿见 [`AppStore`](./AppStore)。
 
+项目级后续路线、IAA、数据验证、TestFlight 和已确定的产品边界见 [`NEXT_STEPS.md`](../../NEXT_STEPS.md)。
+
 当前版本没有接入广告或统计 SDK，因此隐私清单和 App Store 隐私回答均按“不收集数据”准备。如果以后加入穿山甲、优量汇、AdMob、登录、云存档或统计，必须先重新核对 SDK 隐私清单、跟踪授权、隐私政策和 App Store 隐私回答，不能直接沿用当前声明。
 
 ## 审核注意
