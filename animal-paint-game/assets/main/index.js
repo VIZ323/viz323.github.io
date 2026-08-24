@@ -1398,7 +1398,6 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                 case 14:
                   workingTrays = Array.from(new Set(jobs.map(function (job) {
                     return job.tray;
-
                   })));
                   this.workingSlotCount = workingTrays.length;
                   this.updateAutomationMetrics();
@@ -2799,7 +2798,6 @@ System.register("chunks:///_virtual/T1PaintBuildThreeDProof.ts", ['./rollupPlugi
           }, {
             row: 1,
             x: 0,
-
             paintId: 'coral'
           }, {
             row: 1,
@@ -4056,4 +4054,4 @@ System.register("chunks:///_virtual/T1ThreeDProof.ts", ['./rollupPluginModLoBabe
         execute: function () { }
     };
     });
-
+});
