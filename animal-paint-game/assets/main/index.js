@@ -993,7 +993,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             });
           };
 
-          // 19 行彩色方块组成覆盖动物的外壳；玩家从脚向上逐层解除外壳。
+          // 19 行彩色方块组成覆盖动物的外壳；每列从靠近停车场的一端独立疏通。
           addRow(0, [-6, -5, -4, -3, 3, 4, 5, 6], function (column) {
             return Math.abs(column) >= 5 ? 'oat' : 'ivory';
           });
@@ -1063,18 +1063,28 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           var baseY = this.compactLayout ? -4 : 0;
           var pitch = this.compactLayout ? 12.4 : 15;
           var blockSize = this.compactLayout ? 10.8 : 13.2;
+          var occupied = new Set(layout.map(function (entry) {
+            return entry.column + ":" + entry.row;
+          }));
           layout.forEach(function (entry, index) {
             var definition = _this4.getDefinition(entry.paintId);
             var position = new Vec3(entry.column * pitch, baseY + entry.row * pitch, 0);
-            var ghost = _this4.createShellSquare(_this4.blockAnimal, "GhostCell" + index, position.x, position.y, blockSize, definition.color, definition.deep);
+            var boundary = [[entry.column - 1, entry.row], [entry.column + 1, entry.row], [entry.column, entry.row - 1], [entry.column, entry.row + 1]].some(function (_ref) {
+              var column = _ref[0],
+                row = _ref[1];
+              return !occupied.has(column + ":" + row);
+            });
+            var ghost = _this4.createShellSquare(_this4.blockAnimal, "GhostCell" + index, position.x, position.y, blockSize, definition.color, definition.deep, boundary);
             var fill = _this4.createSoftSquare(_this4.blockAnimal, "FilledCell" + index, position.x, position.y, blockSize, definition.color, definition.deep);
             fill.active = false;
             _this4.cells.push({
               row: entry.row,
+              column: entry.column,
               paintId: entry.paintId,
               position: position,
               ghost: ghost,
               fill: fill,
+              boundary: boundary,
               completed: false
             });
           });
@@ -1202,7 +1212,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             _this7.finalAnimal.setSiblingIndex(_this7.blockAnimal.getSiblingIndex());
             _this7.finalAnimal.active = true;
             _this7.finalAnimalOpacity.opacity = 255;
-            _this7.status.string = '选择颜色桶，自动解除同色外壳';
+            _this7.status.string = '选择彩色空车，无遮挡的同色方块会自动上车';
             _this7.setAutomationStatus('ready');
             _this7.updateControlButtons();
           })["catch"](function (error) {
@@ -1274,7 +1284,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   this.updateSlotLabels();
                   this.updateControlButtons();
                   this.setAutomationStatus('running');
-                  this.status.string = tray.definition.name + "\u8FDB\u5165\u989C\u8272\u4F4D\uFF0C\u81EA\u52A8\u89E3\u9664\u540C\u8272\u5916\u58F3\u2026";
+                  this.status.string = tray.definition.name + "\u7A7A\u8F66\u8FDB\u5165\u8F66\u4F4D\uFF0C\u65E0\u906E\u6321\u65B9\u5757\u5F00\u59CB\u4E0A\u8F66\u2026";
                   this.playSound('select', 0.52);
                   Tween.stopAllByTarget(tray.node);
                   tween(tray.node).to(0.08, {
@@ -1307,174 +1317,123 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
         _proto.resolveAvailableCells = /*#__PURE__*/function () {
           var _resolveAvailableCells = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
             var _this9 = this;
-            var _loop2, _ret, currentRow, neededNames, hasQueueChoice;
-            return _regeneratorRuntime().wrap(function _callee2$(_context3) {
-              while (1) switch (_context3.prev = _context3.next) {
+            var jobs, workingTrays, workingNames, neededNames, hasQueueChoice;
+            return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+              while (1) switch (_context2.prev = _context2.next) {
                 case 0:
                   if (!(this.resolving || this.terminal)) {
-                    _context3.next = 2;
+                    _context2.next = 2;
                     break;
                   }
-                  return _context3.abrupt("return");
+                  return _context2.abrupt("return");
                 case 2:
                   this.resolving = true;
-                  _loop2 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop2() {
-                    var row, jobs, workingTrays, workingNames;
-                    return _regeneratorRuntime().wrap(function _loop2$(_context2) {
-                      while (1) switch (_context2.prev = _context2.next) {
-                        case 0:
-                          row = _this9.getCurrentRow();
-                          if (!(row < 0)) {
-                            _context2.next = 6;
-                            break;
-                          }
-                          _this9.resolving = false;
-                          _context2.next = 5;
-                          return _this9.completeAnimal();
-                        case 5:
-                          return _context2.abrupt("return", {
-                            v: void 0
-                          });
-                        case 6:
-                          jobs = _this9.allocateRowJobs(row);
-                          if (!(jobs.length === 0)) {
-                            _context2.next = 9;
-                            break;
-                          }
-                          return _context2.abrupt("return", 0);
-                        case 9:
-                          workingTrays = Array.from(new Set(jobs.map(function (job) {
-                            return job.tray;
-                          })));
-                          _this9.workingSlotCount = workingTrays.length;
-                          _this9.updateAutomationMetrics();
-                          workingNames = workingTrays.map(function (tray) {
-                            return tray.definition.name;
-                          }).join('＋');
-                          _this9.status.string = workingTrays.length > 1 ? workingNames + "\u540C\u65F6\u89E3\u9664\u7B2C " + (row + 1) + " \u5C42\u5916\u58F3" : workingNames + "\u81EA\u52A8\u89E3\u9664\u7B2C " + (row + 1) + " \u5C42\u5916\u58F3";
-                          _context2.next = 16;
-                          return Promise.all(jobs.map(function (job, index) {
-                            return _this9.flyPaintBlock(job.tray, job.cell, index * 0.012);
-                          }));
-                        case 16:
-                          jobs.forEach(function (_ref, index) {
-                            var cell = _ref.cell,
-                              tray = _ref.tray;
-                            cell.completed = true;
-                            var shellOpacity = cell.ghost.getComponent(UIOpacity);
-                            Tween.stopAllByTarget(cell.ghost);
-                            Tween.stopAllByTarget(shellOpacity);
-                            tween(cell.ghost).delay(index * 0.008).to(0.07, {
-                              scale: new Vec3(1.18, 0.82, 1),
-                              eulerAngles: new Vec3(0, 0, index % 2 ? 8 : -8)
-                            }, {
-                              easing: 'quadOut'
-                            }).to(0.12, {
-                              scale: new Vec3(0.08, 0.08, 1),
-                              eulerAngles: new Vec3(0, 0, index % 2 ? 34 : -34)
-                            }, {
-                              easing: 'quadIn'
-                            }).call(function () {
-                              cell.ghost.active = false;
-                            }).start();
-                            tween(shellOpacity).delay(0.07 + index * 0.008).to(0.11, {
-                              opacity: 0
-                            }).start();
-                            tray.remaining -= 1;
-                            tray.countLabel.string = String(tray.remaining);
-                          });
-                          _this9.landedSoundCounter += jobs.length;
-                          workingTrays.forEach(function (_, index) {
-                            return _this9.playSound('land', index === 0 ? 0.22 : 0.16);
-                          });
-                          _this9.updateSlotLabels();
-                          _context2.next = 22;
-                          return _this9.wait(0.2 + jobs.length * 0.008);
-                        case 22:
-                          _this9.updateBlueprintPreview();
-                          if (_this9.cells.some(function (cell) {
-                            return !cell.completed && cell.row === row;
-                          })) {
-                            _context2.next = 26;
-                            break;
-                          }
-                          _context2.next = 26;
-                          return _this9.celebrateLayer(row);
-                        case 26:
-                          _context2.next = 28;
-                          return Promise.all(workingTrays.filter(function (tray) {
-                            return tray.remaining === 0;
-                          }).map(function (tray) {
-                            return _this9.releaseTray(tray);
-                          }));
-                        case 28:
-                          _context2.next = 30;
-                          return _this9.wait(0.045);
-                        case 30:
-                        case "end":
-                          return _context2.stop();
-                      }
-                    }, _loop2);
-                  });
-                case 4:
+                case 3:
                   if (this.terminal) {
-                    _context3.next = 13;
+                    _context2.next = 34;
                     break;
                   }
-                  return _context3.delegateYield(_loop2(), "t0", 6);
-                case 6:
-                  _ret = _context3.t0;
-                  if (!(_ret === 0)) {
-                    _context3.next = 9;
+                  if (this.cells.some(function (cell) {
+                    return !cell.completed;
+                  })) {
+                    _context2.next = 9;
                     break;
                   }
-                  return _context3.abrupt("break", 13);
+                  this.resolving = false;
+                  _context2.next = 8;
+                  return this.completeAnimal();
+                case 8:
+                  return _context2.abrupt("return");
                 case 9:
-                  if (!_ret) {
-                    _context3.next = 11;
+                  jobs = this.allocateExposedJobs();
+                  if (!(jobs.length === 0)) {
+                    _context2.next = 12;
                     break;
                   }
-                  return _context3.abrupt("return", _ret.v);
-                case 11:
-                  _context3.next = 4;
+                  return _context2.abrupt("break", 34);
+                case 12:
+                  workingTrays = Array.from(new Set(jobs.map(function (job) {
+                    return job.tray;
+                  })));
+                  this.workingSlotCount = workingTrays.length;
+                  this.updateAutomationMetrics();
+                  workingNames = workingTrays.map(function (tray) {
+                    return tray.definition.name;
+                  }).join('＋');
+                  this.status.string = workingTrays.length > 1 ? workingNames + "\u5C0F\u65B9\u5757\u540C\u65F6\u4E0A\u8F66" : workingNames + "\u5C0F\u65B9\u5757\u6B63\u5728\u4E0A\u8F66";
+                  _context2.next = 19;
+                  return Promise.all(jobs.map(function (job, index) {
+                    return _this9.walkShellBlockToCar(job.tray, job.cell, index * 0.018);
+                  }));
+                case 19:
+                  jobs.forEach(function (_ref2) {
+                    var cell = _ref2.cell,
+                      tray = _ref2.tray;
+                    cell.completed = true;
+                    cell.ghost.active = false;
+                    tray.remaining -= 1;
+                    tray.countLabel.string = String(tray.remaining);
+                  });
+                  this.landedSoundCounter += jobs.length;
+                  workingTrays.forEach(function (_, index) {
+                    return _this9.playSound('land', index === 0 ? 0.22 : 0.16);
+                  });
+                  this.updateSlotLabels();
+                  _context2.next = 25;
+                  return this.wait(0.08);
+                case 25:
+                  this.updateBlueprintPreview();
+                  _context2.next = 28;
+                  return this.celebrateOpenedPaths(jobs);
+                case 28:
+                  _context2.next = 30;
+                  return Promise.all(workingTrays.filter(function (tray) {
+                    return tray.remaining === 0;
+                  }).map(function (tray) {
+                    return _this9.releaseTray(tray);
+                  }));
+                case 30:
+                  _context2.next = 32;
+                  return this.wait(0.045);
+                case 32:
+                  _context2.next = 3;
                   break;
-                case 13:
+                case 34:
                   this.resolving = false;
                   this.workingSlotCount = 0;
                   this.updateAutomationMetrics();
-                  if (!(this.getCurrentRow() < 0)) {
-                    _context3.next = 20;
+                  if (this.cells.some(function (cell) {
+                    return !cell.completed;
+                  })) {
+                    _context2.next = 41;
                     break;
                   }
-                  _context3.next = 19;
+                  _context2.next = 40;
                   return this.completeAnimal();
-                case 19:
-                  return _context3.abrupt("return");
-                case 20:
-                  currentRow = this.getCurrentRow();
-                  neededNames = Array.from(new Set(this.cells.filter(function (cell) {
-                    return !cell.completed && cell.row === currentRow;
-                  }).map(function (cell) {
+                case 40:
+                  return _context2.abrupt("return");
+                case 41:
+                  neededNames = Array.from(new Set(this.getExposedCells().map(function (cell) {
                     return _this9.getDefinition(cell.paintId).name;
                   })));
                   hasQueueChoice = this.trays.some(function (tray) {
                     return _this9.isQueueFront(tray);
                   });
                   if (!(this.activeSlots.every(Boolean) || !hasQueueChoice)) {
-                    _context3.next = 27;
+                    _context2.next = 47;
                     break;
                   }
-                  _context3.next = 26;
+                  _context2.next = 46;
                   return this.failBuild(neededNames.join(' / '));
-                case 26:
-                  return _context3.abrupt("return");
-                case 27:
-                  this.status.string = "\u7B2C " + (currentRow + 1) + " \u5C42\u8FD8\u9700\u8981 " + neededNames.join(' / ') + "\uFF0C\u672A\u7528\u5B8C\u989C\u8272\u7EE7\u7EED\u5360\u4F4D";
+                case 46:
+                  return _context2.abrupt("return");
+                case 47:
+                  this.status.string = "\u65E0\u906E\u6321\u4F4D\u7F6E\u9700\u8981 " + neededNames.join(' / ') + "\uFF0C\u672A\u6EE1\u7684\u8F66\u7EE7\u7EED\u5360\u4F4D";
                   this.setAutomationStatus('waiting');
                   this.updateControlButtons();
-                case 30:
+                case 50:
                 case "end":
-                  return _context3.stop();
+                  return _context2.stop();
               }
             }, _callee2, this);
           }));
@@ -1483,76 +1442,123 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           }
           return resolveAvailableCells;
         }();
-        _proto.flyPaintBlock = /*#__PURE__*/function () {
-          var _flyPaintBlock = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(tray, target, delay) {
+        _proto.walkShellBlockToCar = /*#__PURE__*/function () {
+          var _walkShellBlockToCar = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(tray, target, delay) {
             var _this10 = this;
-            return _regeneratorRuntime().wrap(function _callee3$(_context4) {
-              while (1) switch (_context4.prev = _context4.next) {
+            return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+              while (1) switch (_context3.prev = _context3.next) {
                 case 0:
                   if (delay === void 0) {
                     delay = 0;
                   }
-                  return _context4.abrupt("return", new Promise(function (resolve) {
-                    var flying = _this10.createSoftSquare(_this10.canvasNode, 'FlyingPaintBlock', tray.node.position.x, tray.node.position.y, 13, tray.definition.color, tray.definition.deep);
-                    _this10.transientNodes.push(flying);
-                    var midpoint = new Vec3((tray.node.position.x + target.position.x) * 0.5, Math.max(tray.node.position.y, target.position.y) + 36, 0);
-                    tween(flying).delay(delay).to(0.12, {
-                      position: midpoint,
-                      scale: new Vec3(1.08, 1.08, 1),
-                      eulerAngles: new Vec3(0, 0, 12)
+                  return _context3.abrupt("return", new Promise(function (resolve) {
+                    var definition = _this10.getDefinition(target.paintId);
+                    var walker = _this10.createSoftSquare(_this10.canvasNode, 'WalkingShellBlock', target.position.x, target.position.y, 13, definition.color, definition.deep);
+                    _this10.addWalkingLegs(walker, definition.deep);
+                    _this10.transientNodes.push(walker);
+                    var sourceOpacity = target.ghost.getComponent(UIOpacity);
+                    var start = target.position.clone();
+                    var carDoor = new Vec3(tray.node.position.x, tray.node.position.y + 6, 0);
+                    var verticalDistance = Math.max(42, start.y - carDoor.y);
+                    var firstStop = new Vec3(start.x, start.y - Math.min(34, verticalDistance * 0.26), 0);
+                    var secondStop = new Vec3(start.x + (carDoor.x - start.x) * 0.5, start.y - verticalDistance * 0.63, 0);
+                    tween(walker).delay(delay).call(function () {
+                      sourceOpacity.opacity = 0;
+                    }).to(0.1, {
+                      position: firstStop,
+                      scale: new Vec3(1.04, 0.96, 1),
+                      eulerAngles: new Vec3(0, 0, -7)
                     }, {
-                      easing: 'quadOut'
+                      easing: 'sineInOut'
+                    }).to(0.1, {
+                      position: secondStop,
+                      scale: new Vec3(0.98, 1.04, 1),
+                      eulerAngles: new Vec3(0, 0, 7)
+                    }, {
+                      easing: 'sineInOut'
                     }).to(0.12, {
-                      position: target.position.clone(),
-                      scale: new Vec3(0.78, 0.78, 1),
+                      position: carDoor,
+                      scale: new Vec3(0.74, 0.74, 1),
                       eulerAngles: Vec3.ZERO
                     }, {
                       easing: 'quadIn'
+                    }).to(0.08, {
+                      position: tray.node.position.clone(),
+                      scale: new Vec3(0.1, 0.1, 1)
+                    }, {
+                      easing: 'quadIn'
                     }).call(function () {
-                      _this10.createLandingRipple(target.position, tray.definition.color);
-                      flying.destroy();
+                      _this10.createLandingRipple(tray.node.position, tray.definition.color);
+                      walker.destroy();
                       _this10.transientNodes = _this10.transientNodes.filter(function (node) {
-                        return node !== flying;
+                        return node !== walker;
                       });
                       resolve();
                     }).start();
                   }));
                 case 2:
                 case "end":
-                  return _context4.stop();
+                  return _context3.stop();
               }
             }, _callee3);
           }));
-          function flyPaintBlock(_x2, _x3, _x4) {
-            return _flyPaintBlock.apply(this, arguments);
+          function walkShellBlockToCar(_x2, _x3, _x4) {
+            return _walkShellBlockToCar.apply(this, arguments);
           }
-          return flyPaintBlock;
+          return walkShellBlockToCar;
         }();
+        _proto.addWalkingLegs = function addWalkingLegs(walker, color) {
+          var legs = new Node('TwoLittleLegs');
+          legs.layer = Layers.Enum.UI_2D;
+          legs.setPosition(0, -7, 0);
+          walker.addChild(legs);
+          legs.addComponent(UITransform).setContentSize(14, 10);
+          var graphics = legs.addComponent(Graphics);
+          graphics.lineWidth = 2.2;
+          graphics.strokeColor = color;
+          graphics.moveTo(-3, 3);
+          graphics.lineTo(-4, -3);
+          graphics.moveTo(3, 3);
+          graphics.lineTo(4, -3);
+          graphics.stroke();
+          graphics.fillColor = color;
+          graphics.ellipse(-5, -4, 3.5, 1.8);
+          graphics.ellipse(5, -4, 3.5, 1.8);
+          graphics.fill();
+        };
         _proto.releaseTray = /*#__PURE__*/function () {
           var _releaseTray = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(tray) {
             var slotIndex;
-            return _regeneratorRuntime().wrap(function _callee4$(_context5) {
-              while (1) switch (_context5.prev = _context5.next) {
+            return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+              while (1) switch (_context4.prev = _context4.next) {
                 case 0:
                   slotIndex = tray.slotIndex;
                   this.activeSlots[slotIndex] = null;
                   tray.slotIndex = -1;
                   this.updateSlotLabels();
-                  tween(tray.node).to(0.14, {
-                    scale: new Vec3(0.7, 0.7, 1)
+                  this.createCarExhaust(tray.node.position.clone(), tray.definition.color);
+                  tween(tray.node).to(0.08, {
+                    scale: new Vec3(0.9, 1.02, 1),
+                    eulerAngles: new Vec3(0, 0, -3)
+                  }, {
+                    easing: 'quadOut'
+                  }).to(0.32, {
+                    position: new Vec3(238, tray.node.position.y + 2, 0),
+                    scale: new Vec3(1.03, 0.96, 1),
+                    eulerAngles: Vec3.ZERO
                   }, {
                     easing: 'quadIn'
                   }).start();
-                  tween(tray.opacity).to(0.14, {
+                  tween(tray.opacity).delay(0.24).to(0.14, {
                     opacity: 0
                   }).start();
-                  _context5.next = 8;
-                  return this.wait(0.16);
-                case 8:
-                  tray.node.active = false;
+                  _context4.next = 9;
+                  return this.wait(0.42);
                 case 9:
+                  tray.node.active = false;
+                case 10:
                 case "end":
-                  return _context5.stop();
+                  return _context4.stop();
               }
             }, _callee4, this);
           }));
@@ -1564,56 +1570,70 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
         _proto.completeAnimal = /*#__PURE__*/function () {
           var _completeAnimal = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
             var _this11 = this;
-            return _regeneratorRuntime().wrap(function _callee5$(_context6) {
-              while (1) switch (_context6.prev = _context6.next) {
+            var animalBase;
+            return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+              while (1) switch (_context5.prev = _context5.next) {
                 case 0:
                   if (!this.terminal) {
-                    _context6.next = 2;
+                    _context5.next = 2;
                     break;
                   }
-                  return _context6.abrupt("return");
+                  return _context5.abrupt("return");
                 case 2:
                   this.terminal = true;
                   this.completionWon = true;
                   this.setAutomationStatus('transforming');
                   this.progressLabel.string = this.cells.length + " / " + this.cells.length;
-                  this.status.string = '外壳全部解除，小动物获救！';
+                  this.status.string = '最后一辆车开走，兔兔获救！';
                   this.updateControlButtons();
                   this.resetSequencePose();
                   this.finalAnimal.active = true;
                   this.finalAnimalOpacity.opacity = 255;
-                  tween(this.finalAnimal).to(0.18, {
-                    scale: new Vec3(1.08, 0.92, 1)
+                  animalBase = this.finalAnimal.position.clone();
+                  tween(this.finalAnimal).to(0.12, {
+                    scale: new Vec3(1.12, 0.86, 1)
                   }, {
                     easing: 'quadOut'
                   }).call(function () {
                     _this11.finalAnimalSprite.spriteFrame = _this11.finalAnimalFrames.joy;
                     _this11.playSound('success', 0.68);
-                  }).to(0.16, {
-                    scale: new Vec3(0.96, 1.05, 1)
-                  }, {
-                    easing: 'sineOut'
                   }).to(0.18, {
+                    position: animalBase.clone().add(new Vec3(0, 24, 0)),
+                    scale: new Vec3(0.94, 1.08, 1)
+                  }, {
+                    easing: 'quadOut'
+                  }).to(0.15, {
+                    position: animalBase,
+                    scale: new Vec3(1.1, 0.9, 1)
+                  }, {
+                    easing: 'quadIn'
+                  }).to(0.14, {
+                    position: animalBase.clone().add(new Vec3(0, 12, 0)),
+                    scale: new Vec3(0.97, 1.05, 1)
+                  }, {
+                    easing: 'quadOut'
+                  }).to(0.14, {
+                    position: animalBase,
                     scale: Vec3.ONE
                   }, {
-                    easing: 'sineInOut'
-                  }).delay(0.58).call(function () {
+                    easing: 'quadIn'
+                  }).delay(0.38).call(function () {
                     _this11.finalAnimalSprite.spriteFrame = _this11.finalAnimalFrames.blink;
                   }).delay(0.14).call(function () {
-                    _this11.finalAnimalSprite.spriteFrame = _this11.finalAnimalFrames.normal;
+                    _this11.finalAnimalSprite.spriteFrame = _this11.finalAnimalFrames.joy;
                   }).start();
                   this.createCelebration();
-                  _context6.next = 15;
-                  return this.wait(0.72);
-                case 15:
+                  _context5.next = 16;
+                  return this.wait(1.12);
+                case 16:
                   this.progressLabel.string = this.cells.length + " / " + this.cells.length;
-                  this.status.string = '完成：彩色外壳解除，兔兔获救';
-                  this.showResult('success', '获救！', '兔兔自由了');
+                  this.status.string = '完成：彩色方块全部乘车离开，兔兔获救';
+                  this.showResult('success', '获救！', '兔兔出来啦');
                   this.setAutomationStatus('passed');
                   this.updateControlButtons();
-                case 20:
+                case 21:
                 case "end":
-                  return _context6.stop();
+                  return _context5.stop();
               }
             }, _callee5, this);
           }));
@@ -1625,22 +1645,22 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
         _proto.failBuild = /*#__PURE__*/function () {
           var _failBuild = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(needed) {
             var _this12 = this;
-            return _regeneratorRuntime().wrap(function _callee6$(_context7) {
-              while (1) switch (_context7.prev = _context7.next) {
+            return _regeneratorRuntime().wrap(function _callee6$(_context6) {
+              while (1) switch (_context6.prev = _context6.next) {
                 case 0:
                   if (!this.terminal) {
-                    _context7.next = 2;
+                    _context6.next = 2;
                     break;
                   }
-                  return _context7.abrupt("return");
+                  return _context6.abrupt("return");
                 case 2:
                   this.terminal = true;
                   this.completionWon = false;
-                  this.status.string = "\u989C\u8272\u4F4D\u5DF2\u88AB\u7B49\u5F85\u989C\u8272\u5360\u6EE1\uFF1B\u5F53\u524D\u5C42\u9700\u8981 " + needed;
+                  this.status.string = "\u8F66\u4F4D\u5DF2\u88AB\u672A\u6EE1\u8F66\u8F86\u5360\u6EE1\uFF1B\u65E0\u906E\u6321\u4F4D\u7F6E\u9700\u8981 " + needed;
                   this.progressLabel.string = '×';
                   this.setAutomationStatus('failed');
                   this.playSound('fail', 0.52);
-                  this.showResult('fail', '颜色位已满', "\u9700\u8981 " + needed);
+                  this.showResult('fail', '车位已满', "\u9700\u8981 " + needed);
                   this.activeSlots.forEach(function (tray) {
                     if (!tray) return;
                     tween(tray.node).to(0.08, {
@@ -1651,13 +1671,13 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                       position: _this12.slotPositions[tray.slotIndex]
                     }).start();
                   });
-                  _context7.next = 12;
+                  _context6.next = 12;
                   return this.wait(0.28);
                 case 12:
                   this.updateControlButtons();
                 case 13:
                 case "end":
-                  return _context7.stop();
+                  return _context6.stop();
               }
             }, _callee6, this);
           }));
@@ -1710,7 +1730,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.hideResult();
           this.updateSlotLabels();
           this.updateBlueprintPreview();
-          this.status.string = '选择颜色桶，自动解除同色外壳';
+          this.status.string = '选择彩色空车，无遮挡的同色方块会自动上车';
           this.setAutomationStatus('ready');
           this.updateControlButtons();
         };
@@ -1723,12 +1743,12 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.finalAnimalSprite.spriteFrame = this.finalAnimalFrames.normal;
         };
         _proto.updateBlueprintPreview = function updateBlueprintPreview() {
-          var currentRow = this.getCurrentRow();
+          var exposed = new Set(this.getExposedCells());
           this.cells.forEach(function (cell) {
             var opacity = cell.ghost.getComponent(UIOpacity);
             cell.ghost.active = !cell.completed;
-            opacity.opacity = cell.completed ? 0 : cell.row === currentRow ? 255 : 232;
-            cell.ghost.setScale(cell.completed ? Vec3.ONE : cell.row === currentRow ? new Vec3(1.06, 1.06, 1) : Vec3.ONE);
+            opacity.opacity = cell.completed ? 0 : exposed.has(cell) ? 255 : 226;
+            cell.ghost.setScale(cell.completed ? Vec3.ONE : exposed.has(cell) ? new Vec3(1.06, 1.06, 1) : Vec3.ONE);
             if (!cell.completed) cell.ghost.setRotationFromEuler(Vec3.ZERO);
           });
           var completedCount = this.cells.filter(function (cell) {
@@ -1745,27 +1765,42 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             label.string = '';
             var slotGraphics = _this13.slotNodes[index].getComponent(Graphics);
             _this13.drawOutlinedPanel(slotGraphics, 58, 66, 15, tray ? new Color(tray.definition.color.r, tray.definition.color.g, tray.definition.color.b, 52) : new Color(115, 109, 145, 70), tray ? new Color(255, 255, 255, 205) : new Color(238, 237, 248, 175), 2, !tray);
+            var parkingLine = tray ? new Color(255, 255, 255, 105) : new Color(246, 242, 255, 205);
+            slotGraphics.lineWidth = 2;
+            slotGraphics.strokeColor = parkingLine;
+            slotGraphics.moveTo(-20, -23);
+            slotGraphics.lineTo(-20, 15);
+            slotGraphics.moveTo(20, -23);
+            slotGraphics.lineTo(20, 15);
+            slotGraphics.stroke();
+            slotGraphics.fillColor = parkingLine;
+            slotGraphics.roundRect(-13, -26, 26, 3, 1.5);
+            slotGraphics.fill();
           });
           this.updateAutomationMetrics();
         };
-        _proto.getCurrentRow = function getCurrentRow() {
-          var incomplete = this.cells.filter(function (cell) {
-            return !cell.completed;
+        _proto.isCellExposed = function isCellExposed(cell) {
+          if (cell.completed) return false;
+          return !this.cells.some(function (other) {
+            return !other.completed && other.column === cell.column && other.row < cell.row;
           });
-          return incomplete.length ? Math.min.apply(Math, incomplete.map(function (cell) {
-            return cell.row;
-          })) : -1;
         };
-        _proto.allocateRowJobs = function allocateRowJobs(row) {
+        _proto.getExposedCells = function getExposedCells() {
           var _this14 = this;
+          return this.cells.filter(function (cell) {
+            return _this14.isCellExposed(cell);
+          }).sort(function (a, b) {
+            return a.row - b.row || a.column - b.column;
+          });
+        };
+        _proto.allocateExposedJobs = function allocateExposedJobs() {
+          var _this15 = this;
           var assigned = new Map();
           var cursorByPaint = new Map();
           var jobs = [];
-          this.cells.filter(function (cell) {
-            return !cell.completed && cell.row === row;
-          }).forEach(function (cell) {
+          this.getExposedCells().forEach(function (cell) {
             var _cursorByPaint$get, _assigned$get2;
-            var candidates = _this14.activeSlots.filter(function (tray) {
+            var candidates = _this15.activeSlots.filter(function (tray) {
               var _assigned$get;
               return Boolean(tray && tray.definition.id === cell.paintId && tray.remaining - ((_assigned$get = assigned.get(tray)) != null ? _assigned$get : 0) > 0);
             });
@@ -1787,40 +1822,52 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           });
         };
         _proto.createPaintTrayNode = function createPaintTrayNode(definition, home, amount, batchIndex) {
-          var node = new Node("PaintTray:" + definition.id + ":" + batchIndex);
+          var node = new Node("ColorCar:" + definition.id + ":" + batchIndex);
           node.layer = Layers.Enum.UI_2D;
           node.setPosition(home);
           this.canvasNode.addChild(node);
           node.addComponent(UITransform).setContentSize(58, 54);
           var graphics = node.addComponent(Graphics);
-          graphics.fillColor = new Color(44, 40, 67, 65);
-          graphics.ellipse(0, -25, 25, 7);
-          graphics.fill();
-          graphics.lineWidth = 4;
-          graphics.strokeColor = new Color(definition.deep.r, definition.deep.g, definition.deep.b, 205);
-          graphics.arc(0, 7, 22, Math.PI * 0.1, Math.PI * 0.9, false);
-          graphics.stroke();
-          graphics.fillColor = definition.deep;
-          graphics.roundRect(-26, -23, 52, 43, 12);
-          graphics.fill();
-          graphics.fillColor = definition.color;
-          graphics.roundRect(-24, -19, 48, 37, 11);
+          // 侧视空车：车身颜色就是它接载的方块颜色，避免再依赖文字解释。
+          graphics.fillColor = new Color(44, 40, 67, 72);
+          graphics.ellipse(0, -22, 28, 6);
           graphics.fill();
           graphics.fillColor = definition.deep;
-          graphics.ellipse(0, 18, 25, 9);
+          graphics.roundRect(-17, 1, 35, 20, 8);
           graphics.fill();
           graphics.fillColor = definition.color;
-          graphics.ellipse(0, 19, 21, 6);
+          graphics.roundRect(-14, 3, 30, 17, 7);
           graphics.fill();
-          graphics.fillColor = new Color(255, 255, 255, 125);
-          graphics.roundRect(-17, 7, 8, 20, 4);
+          graphics.fillColor = new Color(196, 232, 240, 255);
+          graphics.roundRect(-10, 7, 10, 9, 3);
+          graphics.roundRect(3, 7, 9, 9, 3);
+          graphics.fill();
+          graphics.fillColor = definition.deep;
+          graphics.roundRect(-28, -16, 56, 28, 8);
+          graphics.fill();
+          graphics.fillColor = definition.color;
+          graphics.roundRect(-26, -13, 52, 23, 7);
+          graphics.fill();
+          graphics.fillColor = new Color(255, 255, 255, 118);
+          graphics.roundRect(-20, 3, 14, 4, 2);
+          graphics.fill();
+          graphics.fillColor = new Color(255, 244, 166, 255);
+          graphics.roundRect(22, -5, 5, 7, 2);
+          graphics.fill();
+          graphics.fillColor = new Color(48, 48, 68, 255);
+          graphics.circle(-17, -14, 7);
+          graphics.circle(17, -14, 7);
+          graphics.fill();
+          graphics.fillColor = new Color(225, 229, 240, 255);
+          graphics.circle(-17, -14, 3.1);
+          graphics.circle(17, -14, 3.1);
           graphics.fill();
           var countNode = new Node('CountPanel');
           countNode.layer = Layers.Enum.UI_2D;
-          countNode.setPosition(0, -3, 0);
+          countNode.setPosition(2, -3, 0);
           node.addChild(countNode);
-          countNode.addComponent(UITransform).setContentSize(46, 30);
-          var countLabel = this.addLabel(countNode, String(amount), 0, 0, 19, Color.WHITE, 42, true);
+          countNode.addComponent(UITransform).setContentSize(36, 24);
+          var countLabel = this.addLabel(countNode, String(amount), 0, 0, 16, Color.WHITE, 34, true);
           countLabel.node.name = 'Count';
           return node;
         };
@@ -1838,7 +1885,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             easing: 'sineInOut'
           })).start();
         };
-        _proto.createShellSquare = function createShellSquare(parent, name, x, y, size, targetColor, targetEdge) {
+        _proto.createShellSquare = function createShellSquare(parent, name, x, y, size, targetColor, targetEdge, boundary) {
           var node = new Node(name);
           node.layer = Layers.Enum.UI_2D;
           node.setPosition(x, y, 0);
@@ -1853,9 +1900,10 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           graphics.fillColor = targetColor;
           graphics.roundRect(-size / 2, -size / 2, size, size, size * 0.24);
           graphics.fill();
-          graphics.lineWidth = Math.max(1, size * 0.08);
-          graphics.strokeColor = new Color(targetEdge.r, targetEdge.g, targetEdge.b, 255);
-          graphics.roundRect(-size / 2 + 0.6, -size / 2 + 0.6, size - 1.2, size - 1.2, size * 0.2);
+          graphics.lineWidth = boundary ? Math.max(1.8, size * 0.16) : Math.max(0.85, size * 0.07);
+          graphics.strokeColor = boundary ? new Color(Math.max(24, targetEdge.r - 34), Math.max(24, targetEdge.g - 34), Math.max(24, targetEdge.b - 34), 255) : new Color(targetEdge.r, targetEdge.g, targetEdge.b, 235);
+          var inset = boundary ? 1.05 : 0.6;
+          graphics.roundRect(-size / 2 + inset, -size / 2 + inset, size - inset * 2, size - inset * 2, size * 0.2);
           graphics.stroke();
           graphics.fillColor = new Color(255, 255, 255, 105);
           graphics.roundRect(-size * 0.28, size * 0.12, size * 0.3, size * 0.12, size * 0.05);
@@ -1886,40 +1934,73 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           return node;
         };
         _proto.createCelebration = function createCelebration() {
-          var _this15 = this;
+          var _this16 = this;
           var colors = this.paintDefinitions.map(function (definition) {
             return definition.color;
           });
+          var burstY = this.compactLayout ? 72 : 92;
+          var _loop2 = function _loop2() {
+            var ring = new Node("RescueRing:" + ringIndex);
+            ring.layer = Layers.Enum.UI_2D;
+            ring.setPosition(0, burstY, 0);
+            _this16.canvasNode.addChild(ring);
+            ring.addComponent(UITransform).setContentSize(160, 160);
+            var graphics = ring.addComponent(Graphics);
+            graphics.lineWidth = 5 - ringIndex;
+            graphics.strokeColor = ringIndex === 0 ? new Color(255, 220, 90, 210) : new Color(255, 255, 255, 195);
+            graphics.circle(0, 0, 42 + ringIndex * 12);
+            graphics.stroke();
+            var opacity = ring.addComponent(UIOpacity);
+            ring.setScale(0.45, 0.45, 1);
+            _this16.transientNodes.push(ring);
+            tween(ring).delay(0.16 + ringIndex * 0.1).to(0.68, {
+              scale: new Vec3(1.55, 1.55, 1)
+            }, {
+              easing: 'quadOut'
+            }).start();
+            tween(opacity).delay(0.28 + ringIndex * 0.1).to(0.56, {
+              opacity: 0
+            }, {
+              easing: 'quadOut'
+            }).call(function () {
+              ring.destroy();
+              _this16.transientNodes = _this16.transientNodes.filter(function (node) {
+                return node !== ring;
+              });
+            }).start();
+          };
+          for (var ringIndex = 0; ringIndex < 2; ringIndex += 1) {
+            _loop2();
+          }
           var _loop3 = function _loop3() {
-            var angle = Math.PI * 2 * index / 18;
-            var spark = _this15.createSoftSquare(_this15.canvasNode, "PaintSpark" + index, 0, _this15.compactLayout ? 72 : 82, 8 + index % 3 * 2, colors[index % colors.length], colors[index % colors.length]);
-            _this15.transientNodes.push(spark);
-            tween(spark).delay(0.34).by(0.72, {
-              position: new Vec3(Math.cos(angle) * (118 + index % 3 * 16), Math.sin(angle) * (118 + index % 2 * 22), 0),
+            var angle = Math.PI * 2 * index / 26;
+            var spark = _this16.createSoftSquare(_this16.canvasNode, "PaintSpark" + index, 0, burstY, 8 + index % 3 * 2, colors[index % colors.length], colors[index % colors.length]);
+            _this16.transientNodes.push(spark);
+            tween(spark).delay(0.2 + index % 3 * 0.025).by(0.84, {
+              position: new Vec3(Math.cos(angle) * (126 + index % 3 * 18), Math.sin(angle) * (126 + index % 2 * 24), 0),
               scale: new Vec3(-0.75, -0.75, 0),
-              eulerAngles: new Vec3(0, 0, 110)
+              eulerAngles: new Vec3(0, 0, 150)
             }, {
               easing: 'quadOut'
             }).call(function () {
               spark.destroy();
-              _this15.transientNodes = _this15.transientNodes.filter(function (node) {
+              _this16.transientNodes = _this16.transientNodes.filter(function (node) {
                 return node !== spark;
               });
             }).start();
           };
-          for (var index = 0; index < 18; index += 1) {
+          for (var index = 0; index < 26; index += 1) {
             _loop3();
           }
         };
-        _proto.celebrateLayer = /*#__PURE__*/function () {
-          var _celebrateLayer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(row) {
-            var _this16 = this;
-            var rowCenterY, _loop4, index;
-            return _regeneratorRuntime().wrap(function _callee7$(_context9) {
-              while (1) switch (_context9.prev = _context9.next) {
+        _proto.celebrateOpenedPaths = /*#__PURE__*/function () {
+          var _celebrateOpenedPaths = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(jobs) {
+            var _this17 = this;
+            var sampleJobs;
+            return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+              while (1) switch (_context7.prev = _context7.next) {
                 case 0:
                   this.playSound('layer', 0.32);
-                  this.status.string = "\u7B2C " + (row + 1) + " \u5C42\u5B8C\u6210\uFF0C\u65B0\u4E00\u5C42\u5DF2\u7ECF\u5F00\u653E";
                   tween(this.sceneCard).to(0.08, {
                     scale: new Vec3(1.008, 1.008, 1)
                   }, {
@@ -1929,60 +2010,76 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
                   }, {
                     easing: 'quadInOut'
                   }).start();
-                  rowCenterY = (this.compactLayout ? -4 : 0) + row * (this.compactLayout ? 12.4 : 15);
-                  _loop4 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop4() {
-                    var definition, spark;
-                    return _regeneratorRuntime().wrap(function _loop4$(_context8) {
-                      while (1) switch (_context8.prev = _context8.next) {
-                        case 0:
-                          definition = _this16.paintDefinitions[(row + index) % _this16.paintDefinitions.length];
-                          spark = _this16.createSoftSquare(_this16.canvasNode, "LayerSpark:" + row + ":" + index, -54 + index * 27, rowCenterY, 6, definition.color, definition.deep);
-                          _this16.transientNodes.push(spark);
-                          tween(spark).by(0.28, {
-                            position: new Vec3((index - 2) * 8, 26 + index % 2 * 8, 0),
-                            scale: new Vec3(-0.55, -0.55, 0),
-                            eulerAngles: new Vec3(0, 0, 80)
-                          }, {
-                            easing: 'quadOut'
-                          }).call(function () {
-                            spark.destroy();
-                            _this16.transientNodes = _this16.transientNodes.filter(function (node) {
-                              return node !== spark;
-                            });
-                          }).start();
-                        case 4:
-                        case "end":
-                          return _context8.stop();
-                      }
-                    }, _loop4);
+                  sampleJobs = jobs.filter(function (_, index) {
+                    return index % Math.max(1, Math.ceil(jobs.length / 4)) === 0;
+                  }).slice(0, 4);
+                  sampleJobs.forEach(function (job, index) {
+                    var definition = _this17.getDefinition(job.cell.paintId);
+                    var spark = _this17.createSoftSquare(_this17.canvasNode, "PathSpark:" + index, job.cell.position.x, job.cell.position.y, 6, definition.color, definition.deep);
+                    _this17.transientNodes.push(spark);
+                    tween(spark).by(0.28, {
+                      position: new Vec3((index - 2) * 8, 26 + index % 2 * 8, 0),
+                      scale: new Vec3(-0.55, -0.55, 0),
+                      eulerAngles: new Vec3(0, 0, 80)
+                    }, {
+                      easing: 'quadOut'
+                    }).call(function () {
+                      spark.destroy();
+                      _this17.transientNodes = _this17.transientNodes.filter(function (node) {
+                        return node !== spark;
+                      });
+                    }).start();
                   });
-                  index = 0;
-                case 6:
-                  if (!(index < 5)) {
-                    _context9.next = 11;
-                    break;
-                  }
-                  return _context9.delegateYield(_loop4(), "t0", 8);
-                case 8:
-                  index += 1;
-                  _context9.next = 6;
-                  break;
-                case 11:
-                  _context9.next = 13;
+                  _context7.next = 6;
                   return this.wait(0.13);
-                case 13:
+                case 6:
                 case "end":
-                  return _context9.stop();
+                  return _context7.stop();
               }
             }, _callee7, this);
           }));
-          function celebrateLayer(_x7) {
-            return _celebrateLayer.apply(this, arguments);
+          function celebrateOpenedPaths(_x7) {
+            return _celebrateOpenedPaths.apply(this, arguments);
           }
-          return celebrateLayer;
+          return celebrateOpenedPaths;
         }();
+        _proto.createCarExhaust = function createCarExhaust(position, color) {
+          var _this18 = this;
+          var _loop4 = function _loop4() {
+            var puff = new Node("CarExhaust:" + index);
+            puff.layer = Layers.Enum.UI_2D;
+            puff.setPosition(position.x - 27 - index * 4, position.y - 9 + index % 2 * 4, 0);
+            _this18.canvasNode.addChild(puff);
+            puff.addComponent(UITransform).setContentSize(18, 18);
+            var graphics = puff.addComponent(Graphics);
+            graphics.fillColor = new Color(Math.min(255, color.r + 85), Math.min(255, color.g + 85), Math.min(255, color.b + 85), 190);
+            graphics.circle(0, 0, 4 + index);
+            graphics.fill();
+            var opacity = puff.addComponent(UIOpacity);
+            _this18.transientNodes.push(puff);
+            tween(puff).delay(index * 0.04).by(0.34, {
+              position: new Vec3(-18 - index * 5, 8 + index * 2, 0),
+              scale: new Vec3(1.2, 1.2, 0)
+            }, {
+              easing: 'quadOut'
+            }).start();
+            tween(opacity).delay(index * 0.04).to(0.34, {
+              opacity: 0
+            }, {
+              easing: 'quadOut'
+            }).call(function () {
+              puff.destroy();
+              _this18.transientNodes = _this18.transientNodes.filter(function (node) {
+                return node !== puff;
+              });
+            }).start();
+          };
+          for (var index = 0; index < 3; index += 1) {
+            _loop4();
+          }
+        };
         _proto.createLandingRipple = function createLandingRipple(position, color) {
-          var _this17 = this;
+          var _this19 = this;
           var ripple = new Node('LandingRipple');
           ripple.layer = Layers.Enum.UI_2D;
           ripple.setPosition(position);
@@ -2006,7 +2103,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             easing: 'quadOut'
           }).call(function () {
             ripple.destroy();
-            _this17.transientNodes = _this17.transientNodes.filter(function (node) {
+            _this19.transientNodes = _this19.transientNodes.filter(function (node) {
               return node !== ripple;
             });
           }).start();
@@ -2026,7 +2123,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           };
         };
         _proto.undoLastMove = function undoLastMove() {
-          var _this18 = this;
+          var _this20 = this;
           if (this.resolving || this.history.length === 0 || this.completionWon) return;
           var snapshot = this.history.pop();
           this.clearTransientNodes();
@@ -2066,10 +2163,10 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
             tray.opacity.opacity = 255;
             if (tray.slotIndex >= 0 && tray.remaining > 0) {
               tray.node.active = true;
-              tray.node.setPosition(_this18.slotPositions[tray.slotIndex]);
+              tray.node.setPosition(_this20.slotPositions[tray.slotIndex]);
               tray.node.setScale(0.92, 0.92, 1);
               tray.button.interactable = false;
-              _this18.activeSlots[tray.slotIndex] = tray;
+              _this20.activeSlots[tray.slotIndex] = tray;
             } else if (tray.remaining > 0 && !tray.selected) {
               tray.node.active = true;
               tray.node.setScale(Vec3.ONE);
@@ -2082,7 +2179,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.refreshQueueTrays(false);
           this.updateSlotLabels();
           this.updateBlueprintPreview();
-          this.status.string = '已撤销一步，可以重新选择颜料罐';
+          this.status.string = '已撤销一步，可以重新选择彩色空车';
           this.setAutomationStatus(this.activeSlots.some(Boolean) ? 'waiting' : 'ready');
           this.playSound('select', 0.34);
           this.updateControlButtons();
@@ -2117,7 +2214,7 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.transientNodes = [];
         };
         _proto.updateControlButtons = function updateControlButtons() {
-          var _this19 = this;
+          var _this21 = this;
           if (!this.undoButton || !this.restartButton) return;
           var undoEnabled = !this.resolving && this.history.length > 0 && !this.completionWon;
           var restartEnabled = !this.resolving && Boolean(this.finalAnimal);
@@ -2126,14 +2223,14 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           this.restartButton.interactable = restartEnabled;
           this.restartButtonOpacity.opacity = restartEnabled ? 255 : 96;
           this.trays.forEach(function (tray) {
-            tray.button.interactable = Boolean(_this19.finalAnimal && !_this19.resolving && !_this19.terminal && _this19.activeSlots.some(function (active) {
+            tray.button.interactable = Boolean(_this21.finalAnimal && !_this21.resolving && !_this21.terminal && _this21.activeSlots.some(function (active) {
               return active === null;
-            }) && _this19.isQueueFront(tray));
+            }) && _this21.isQueueFront(tray));
           });
           this.updateAutomationMetrics();
         };
         _proto.updateAutomationMetrics = function updateAutomationMetrics() {
-          var _this20 = this;
+          var _this22 = this;
           if (typeof document === 'undefined') return;
           document.documentElement.dataset.completedCells = String(this.cells.filter(function (cell) {
             return cell.completed;
@@ -2143,12 +2240,14 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           document.documentElement.dataset.activePaintSlots = String(this.activeSlots.filter(Boolean).length);
           document.documentElement.dataset.workingPaintSlots = String(this.workingSlotCount);
           document.documentElement.dataset.availablePaintBoxes = String(this.trays.filter(function (tray) {
-            return _this20.isQueueFront(tray);
+            return _this22.isQueueFront(tray);
           }).length);
           document.documentElement.dataset.totalPaintBoxes = String(this.trays.length);
           document.documentElement.dataset.paintColorCount = String(this.paintDefinitions.length);
           document.documentElement.dataset.paintQueueColumns = '4';
           document.documentElement.dataset.paintSlotCapacity = String(this.activeSlots.length);
+          document.documentElement.dataset.exposedCells = String(this.getExposedCells().length);
+          document.documentElement.dataset.activeColorCars = String(this.activeSlots.filter(Boolean).length);
         };
         _proto.createSparkle = function createSparkle(name, x, y, size, color, delay) {
           var node = new Node(name);
@@ -2261,24 +2360,25 @@ System.register("chunks:///_virtual/T1PaintBuildProof.ts", ['./rollupPluginModLo
           return label;
         };
         _proto.wait = function wait(seconds) {
-          var _this21 = this;
+          var _this23 = this;
           return new Promise(function (resolve) {
-            return _this21.scheduleOnce(resolve, seconds);
+            return _this23.scheduleOnce(resolve, seconds);
           });
         };
         _proto.setAutomationStatus = function setAutomationStatus(status) {
           if (typeof document !== 'undefined') {
             document.documentElement.dataset.t1Status = status;
-            document.documentElement.dataset.renderMode = 'color-shell-rescue';
+            document.documentElement.dataset.renderMode = 'color-car-rescue';
             document.documentElement.dataset.visualDimension = '2d';
             document.documentElement.dataset.assetPipeline = 'full-frame-sprite-sequence-2d';
-            document.documentElement.dataset.uiVersion = 'color-shell-rescue-v6';
+            document.documentElement.dataset.uiVersion = 'walking-shell-color-cars-v7';
             document.documentElement.dataset.audioPipeline = 'resource-wav-cues';
             document.documentElement.dataset.layoutMode = this.compactLayout ? 'compact' : 'tall';
-            document.documentElement.dataset.blockStyle = 'solid-color-shell-removal-full-animal-reveal';
-            document.documentElement.dataset.gameplayMetaphor = 'hybrid-shell-rescue';
+            document.documentElement.dataset.blockStyle = 'outlined-shell-passengers-full-animal-reveal';
+            document.documentElement.dataset.gameplayMetaphor = 'walking-shells-board-color-cars';
             document.documentElement.dataset.paintResolution = 'parallel-active-slots';
-            document.documentElement.dataset.paintBoxModel = 'four-column-front-choice-queues';
+            document.documentElement.dataset.paintBoxModel = 'four-column-front-choice-car-queues';
+            document.documentElement.dataset.unlockModel = 'same-column-clear-path-to-parking';
             this.updateAutomationMetrics();
           }
         };
