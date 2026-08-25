@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#e8f4e3" />
+    <meta name="description" content="小蛙回家路玩法帮助、常见问题和联系支持。" />
+    <title>小蛙回家路 · 支持 / Support</title>
+    <style>
+      :root {
+        --pond: #e8f4e3;
+        --paper: #fffdf5;
+        --ink: #183f35;
+        --muted: #5d786f;
+        --leaf: #2f7558;
+        --leaf-dark: #235c46;
+        --line: #cfe3ca;
+        --soft: #f3f8ed;
+        --warm: #f4b95f;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        background:
+          radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.92), transparent 32rem),
+          linear-gradient(180deg, var(--pond) 0%, #f4f8eb 100%);
+        color: var(--ink);
+        font: 16px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      ::selection { background: #cde8bd; color: var(--ink); }
+
+      a {
+        color: var(--leaf-dark);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+
+      a:hover { color: #173f30; }
+
+      a:focus-visible {
+        outline: 3px solid rgba(244, 185, 95, 0.72);
+        outline-offset: 3px;
+        border-radius: 8px;
+      }
+
+      main {
+        width: min(820px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 72px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 14px;
+        color: var(--leaf);
+        font-size: 13px;
+        font-weight: 750;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        width: 11px;
+        height: 11px;
+        border-radius: 50% 50% 50% 12%;
+        background: var(--leaf);
+        content: "";
+        transform: rotate(-32deg);
+      }
+
+      h1, h2 {
+        margin-top: 0;
+        color: var(--ink);
+        font-family: "Songti SC", "STSong", Georgia, serif;
+        line-height: 1.28;
+      }
+
+      h1 {
+        margin-bottom: 12px;
+        font-size: clamp(32px, 6vw, 52px);
+        letter-spacing: -0.025em;
+      }
+
+      h2 { margin-bottom: 16px; font-size: clamp(21px, 3vw, 26px); }
+      p { margin: 0 0 14px; }
+
+      .intro {
+        max-width: 640px;
+        margin: 0 0 30px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .paper {
+        overflow: hidden;
+        background: rgba(255, 253, 245, 0.96);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: 0 18px 50px rgba(44, 90, 66, 0.1);
+      }
+
+      section { padding: 30px 34px; }
+      section + section { border-top: 1px solid var(--line); }
+
+      .quick-help {
+        background: linear-gradient(135deg, var(--soft), #fffaf0);
+      }
+
+      .faq { margin: 0; }
+
+      .faq > div {
+        display: grid;
+        grid-template-columns: minmax(150px, 0.78fr) minmax(0, 1.6fr);
+        gap: 24px;
+        padding: 20px 0;
+      }
+
+      .faq > div + div { border-top: 1px solid var(--line); }
+      .faq dt { color: var(--leaf-dark); font-weight: 750; }
+      .faq dd { margin: 0; color: #355b4f; }
+
+      .checklist {
+        margin: 8px 0 0;
+        padding-left: 1.25em;
+      }
+
+      .checklist li { margin: 8px 0; padding-left: 4px; }
+
+      .contact {
+        background: var(--leaf-dark);
+        color: #f7fff9;
+      }
+
+      .contact h2, .contact a { color: #fff; }
+
+      .button {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 8px;
+        padding: 11px 18px;
+        background: #fffdf5;
+        border-radius: 999px;
+        color: var(--leaf-dark) !important;
+        font-weight: 750;
+        text-decoration: none;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+      }
+
+      .english { background: rgba(243, 248, 237, 0.46); }
+
+      .footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 22px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 640px) {
+        main {
+          width: min(100% - 20px, 820px);
+          padding: 30px 0 44px;
+        }
+
+        .paper { border-radius: 22px; }
+        section { padding: 24px 20px; }
+        h1 { font-size: 34px; }
+        .intro { font-size: 16px; }
+
+        .faq > div {
+          grid-template-columns: 1fr;
+          gap: 5px;
+          padding: 18px 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Frog Home · Support</p>
+      <h1>小蛙回家路支持</h1>
+      <p class="intro">遇到玩法、声音、广告或进度问题？先看下面的常见解决方法；仍未解决时可以直接发邮件给我们。</p>
+
+      <article class="paper">
+        <section class="quick-help">
+          <h2>快速帮助</h2>
+          <dl class="faq">
+            <div>
+              <dt>小青蛙怎么跳？</dt>
+              <dd>按住游戏区域蓄力，松开后小青蛙会自动朝下一片荷叶跳跃。按得越久，跳得越远。</dd>
+            </div>
+            <div>
+              <dt>必须联网吗？</dt>
+              <dd>核心玩法可以离线体验；激励广告重生、分享奖励、隐私同意和部分诊断功能需要网络。</dd>
+            </div>
+            <div>
+              <dt>需要注册账号吗？</dt>
+              <dd>不需要。最高纪录、萤火虫和设置保存在当前设备上。</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section>
+          <h2>常见问题</h2>
+          <dl class="faq">
+            <div>
+              <dt>声音或触感没有反应</dt>
+              <dd>请先检查游戏设置中的声音与触感开关，再确认设备未静音、音量足够，并在 iOS 设置中开启系统触感。部分 iPad 或模拟器无法呈现与真机完全相同的触感。</dd>
+            </div>
+            <div>
+              <dt>看不到激励广告</dt>
+              <dd>广告可能因网络、地区、隐私选择或暂时无可用广告而无法加载。请保持网络连接后稍等片刻再试；广告不是每次都保证有填充。</dd>
+            </div>
+            <div>
+              <dt>看完广告但没收到奖励</dt>
+              <dd>请先等待结算完成，避免在广告播放时强制关闭 App。若仍未获得奖励，请邮件告知发生时间、设备型号、系统版本和当局得分。</dd>
+            </div>
+            <div>
+              <dt>最高纪录不见了</dt>
+              <dd>进度目前只保存在本机。卸载 App、清除数据或更换设备后无法自动恢复。</dd>
+            </div>
+            <div>
+              <dt>如何重新管理广告隐私选择？</dt>
+              <dd>如果该选项适用于你所在地区，可打开游戏设置，选择“隐私与广告选项”。也可以在 iOS 系统设置中管理跟踪权限。</dd>
+            </div>
+            <div>
+              <dt>如何切换语言？</dt>
+              <dd>游戏会跟随 iOS 的系统或 App 首选语言自动切换，无需在游戏内单独选择。</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section>
+          <h2>反馈问题时请提供</h2>
+          <ul class="checklist">
+            <li>设备型号、iOS 版本和游戏版本；</li>
+            <li>问题发生前你做了什么，以及是否能重复出现；</li>
+            <li>大致发生时间、当局得分和网络状态；</li>
+            <li>不包含私人信息的截图或录屏。</li>
+          </ul>
+          <p>请不要发送密码、身份证件、支付信息等敏感资料。</p>
+        </section>
+
+        <section class="english" lang="en">
+          <h2>Support in English</h2>
+          <p><strong>How to jump:</strong> Hold the play area to charge, then release. A longer hold makes the frog jump farther toward the next lily pad.</p>
+          <p><strong>Connection and account:</strong> Core gameplay works offline and requires no account. Rewarded-ad revives, sharing rewards, consent choices, and some diagnostics require a connection. Progress is stored only on the current device and may be lost if the app is removed.</p>
+          <p><strong>No sound or haptics:</strong> Check the in-game switches, device volume, silent mode, and iOS system haptics. Simulator and iPad behavior may differ from an iPhone.</p>
+          <p><strong>Ad not available:</strong> Availability can vary by network, region, privacy choice, and current ad supply. Stay connected and try again later. If an ad finishes without a reward, email the approximate time, device model, iOS version, and run score.</p>
+          <p><strong>Language:</strong> The game automatically follows the preferred system or per-app language in iOS Settings.</p>
+        </section>
+
+        <section class="contact">
+          <h2>联系我们 / Contact us</h2>
+          <p>通常会在收到邮件后尽快回复。请在主题中写明“游戏问题”或“隐私请求”。</p>
+          <p>We reply as soon as reasonably possible. Please include “Game support” or “Privacy request” in the subject.</p>
+          <a class="button" href="mailto:18515164792@163.com?subject=%E5%B0%8F%E8%9B%99%E5%9B%9E%E5%AE%B6%E8%B7%AF%E6%B8%B8%E6%88%8F%E6%94%AF%E6%8C%81">发送支持邮件 · Email support</a>
+        </section>
+      </article>
+
+      <footer class="footer">
+        <span>© 2026 小蛙回家路</span>
+        <a href="privacy.html">隐私政策 / Privacy Policy</a>
+      </footer>
+    </main>
+  </body>
+</html>
